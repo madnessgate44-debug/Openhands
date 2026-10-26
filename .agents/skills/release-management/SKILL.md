@@ -1,14 +1,12 @@
 ---
 name: release-management
-description: "Coordinate a release: versioning, changelog, rollout, and rollback. Use when preparing, publishing, or rolling back a release."
+description: "This skill should be used when the user asks to \"prepare a release\", \"write the changelog\", \"roll out a version\", \"roll back\", or mentions semver, versioning, or deployment."
 triggers:
 - release
-- version
 - changelog
 - rollout
 - rollback
 - semver
-- deploy
 ---
 
 # Release Management

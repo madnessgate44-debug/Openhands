@@ -1,13 +1,12 @@
 ---
 name: sandbox-lifecycle
-description: Recover the QA environment after a sandbox restart, when the served app 502s or tooling vanishes. Use when ports stop responding or a build/serve process is gone.
+description: "This skill should be used when the served app returns 502, the sandbox restarted, ports stopped responding, or build and serve tooling vanished from a session."
 triggers:
 - sandbox
 - restart
 - port
 - "502"
 - serve
-- nohup
 ---
 
 # Sandbox Lifecycle

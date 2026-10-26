@@ -1,14 +1,12 @@
 ---
 name: typescript-strict-gate
-description: Run and remediate the strict TypeScript gate for this project. Use when fixing type errors, tsc failures, or tsconfig strictness, or when a CI "type check" job is green.
+description: "This skill should be used when the user asks to \"fix type errors\", \"run tsc\", \"make the typecheck gate blocking\", or when a CI type-check job is green but the code may still have type errors."
 triggers:
 - typescript
 - tsc
 - typecheck
 - tsconfig
 - strict
-- ts18047
-- ts2322
 ---
 
 # TypeScript Strict Gate

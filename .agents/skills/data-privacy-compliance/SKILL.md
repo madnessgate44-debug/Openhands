@@ -1,14 +1,13 @@
 ---
 name: data-privacy-compliance
-description: "Handle personal data lawfully, especially for a children's app. Use when touching user data, analytics, or consent."
+description: "This skill should be used when the user asks to \"handle personal data\", \"add analytics\", \"collect consent\", \"set a retention policy\", or mentions privacy, PII, COPPA, GDPR, or children's data."
 triggers:
 - privacy
 - pii
 - gdpr
 - coppa
-- children data
 - consent
-- retention
+- children data
 ---
 
 # Data Privacy and Compliance

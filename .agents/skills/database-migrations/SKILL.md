@@ -1,10 +1,9 @@
 ---
 name: database-migrations
-description: "Write safe, reversible database migrations. Use when changing schema, backfilling data, or altering a live table."
+description: "This skill should be used when the user asks to \"write a migration\", \"change the schema\", \"backfill data\", \"add an index\", or mentions SQL, database changes, or reversible migrations."
 triggers:
 - migration
 - schema change
-- database
 - sql
 - backfill
 - index

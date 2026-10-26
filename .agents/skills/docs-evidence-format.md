@@ -1,7 +1,9 @@
 ---
+name: docs-evidence-format
+description: "Applies to docs and report Markdown. Grade every factual claim and never invent a run."
 paths:
-  - "docs/**/*.md"
-  - "**/*REPORT*.md"
+  - 'docs/**/*.md'
+  - '**/*REPORT*.md'
 ---
 
 DOCS RULE: Grade every factual claim and never invent a run.

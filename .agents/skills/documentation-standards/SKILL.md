@@ -1,12 +1,12 @@
 ---
 name: documentation-standards
-description: "Write and maintain docs: READMEs, API references, runbooks. Use when adding documentation or updating an existing doc."
+description: "This skill should be used when the user asks to \"write a README\", \"document this\", \"write a runbook\", \"update the docs\", or mentions API references or technical writing."
 triggers:
 - docs
 - readme
+- runbook
 - api docs
 - technical writing
-- runbook
 ---
 
 # Documentation Standards

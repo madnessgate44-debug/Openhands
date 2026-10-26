@@ -1,6 +1,6 @@
 ---
 name: dependency-supply-chain
-description: "Manage dependencies and supply-chain risk. Use when adding, upgrading, or auditing a dependency."
+description: "This skill should be used when the user asks to \"add a dependency\", \"upgrade a package\", \"audit dependencies\", \"fix a CVE\", or mentions lockfiles, npm audit, or supply-chain risk."
 triggers:
 - dependency
 - cve

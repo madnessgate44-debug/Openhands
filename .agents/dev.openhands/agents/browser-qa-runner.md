@@ -6,7 +6,7 @@ description: >
   <example>Measure whether the sheet footer overlaps the bottom nav</example>
 tools:
   - terminal
-  - browser
+  - browser_tool_set
 model: inherit
 ---
 

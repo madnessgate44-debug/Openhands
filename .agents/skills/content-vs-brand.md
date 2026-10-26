@@ -1,7 +1,9 @@
 ---
+name: content-vs-brand
+description: "Applies to TypeScript source. Treat \"Amina\" in source as content, not branding, unless it is a true brand surface."
 paths:
-  - "src/**/*.ts"
-  - "src/**/*.tsx"
+  - 'src/**/*.ts'
+  - 'src/**/*.tsx'
 ---
 
 SOURCE RULE: Treat `Amina` in `src/` as content, not branding, unless it is a true brand surface.

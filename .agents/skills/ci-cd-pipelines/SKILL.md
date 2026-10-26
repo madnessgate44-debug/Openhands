@@ -1,14 +1,13 @@
 ---
 name: ci-cd-pipelines
-description: "Build and debug CI/CD pipelines and quality gates. Use when editing GitHub Actions workflows, adding gates, or speeding up pipelines."
+description: "This skill should be used when the user asks to \"edit the workflow\", \"add a CI gate\", \"fix the pipeline\", \"speed up CI\", or mentions GitHub Actions, build gates, or deployment automation."
 triggers:
 - ci
 - cd
 - pipeline
-- workflow
 - github actions
+- workflow
 - gate
-- build
 ---
 
 # CI/CD Pipelines

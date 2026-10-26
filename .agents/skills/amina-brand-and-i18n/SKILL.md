@@ -1,14 +1,13 @@
 ---
 name: amina-brand-and-i18n
-description: Brand, naming, and localization rules for the Miss Noor (formerly Amina) app. Use when editing UI text, brand surfaces, navigation labels, or translations.
+description: "This skill should be used when the user asks to \"change the brand name\", \"fix the app language\", \"add a translation\", \"update the navigation labels\", or mentions Miss Noor, Miss Nour, Amina, i18n, or locale."
 triggers:
 - brand
 - i18n
-- language
 - locale
 - translation
 - noor
-- amina
+- navigation labels
 ---
 
 # Miss Noor Brand and i18n

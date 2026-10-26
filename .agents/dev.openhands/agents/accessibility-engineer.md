@@ -3,7 +3,7 @@ name: accessibility-engineer
 description: "Audits and fixes accessibility. <example>Check keyboard reachability on mobile</example> <example>Fix contrast on the nav</example>"
 tools:
   - terminal
-  - browser
+  - browser_tool_set
 model: inherit
 ---
 

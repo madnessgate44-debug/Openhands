@@ -1,13 +1,11 @@
 ---
 name: secret-redaction-scan
-description: Scan files, git diffs, and gzip payloads for credentials before any git push, because GitHub push protection rejects the push. Use before committing exported data, configs, logs, or archives.
+description: "This skill should be used before any git push of data you did not write by hand (exports, logs, archives), or when the user asks to \"scan for secrets\", \"redact credentials\", or mentions push protection or leaks."
 triggers:
 - secret
 - redact
-- redaction
-- push protection
 - credential
-- api key
+- push protection
 - leak
 ---
 

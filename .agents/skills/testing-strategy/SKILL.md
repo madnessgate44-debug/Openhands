@@ -1,13 +1,12 @@
 ---
 name: testing-strategy
-description: "Plan and review test coverage. Use when writing tests, designing a test plan, or diagnosing flaky tests."
+description: "This skill should be used when the user asks to \"write tests\", \"plan testing\", \"fix a flaky test\", \"improve coverage\", or mentions unit, integration, or e2e tests."
 triggers:
 - test plan
 - coverage
 - unit test
 - integration test
 - e2e
-- flaky test
 ---
 
 # Testing Strategy

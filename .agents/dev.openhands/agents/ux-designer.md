@@ -3,7 +3,7 @@ name: ux-designer
 description: "Designs user experience and flow. <example>Design the onboarding flow</example> <example>Improve the empty states</example>"
 tools:
   - file_editor
-  - browser
+  - browser_tool_set
 model: inherit
 ---
 

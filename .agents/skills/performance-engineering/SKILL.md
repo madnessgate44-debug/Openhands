@@ -1,13 +1,12 @@
 ---
 name: performance-engineering
-description: "Diagnose and fix performance problems. Use when something is slow, the bundle is too big, or Core Web Vitals regress."
+description: "This skill should be used when the user asks to \"make it faster\", \"reduce the bundle\", \"profile this\", \"fix Core Web Vitals\", or mentions latency, memory, or performance regressions."
 triggers:
 - performance
 - profiling
 - core web vitals
 - bundle size
 - latency
-- memory
 ---
 
 # Performance Engineering

@@ -1,11 +1,10 @@
 ---
 name: security-threat-model
-description: "Threat-model a feature and review code for security. Use when handling user input, auth, money, or personal data."
+description: "This skill should be used when the user asks to \"threat-model this\", \"review for security\", \"check for vulnerabilities\", or when a change handles user input, auth, money, or personal data."
 triggers:
 - threat model
 - stride
 - owasp
-- vulnerability
 - security review
 - auth
 ---

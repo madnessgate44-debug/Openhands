@@ -1,15 +1,12 @@
 ---
 name: engineering-execution-os
-description: "Follow this repo's mandatory Engineering Execution OS v2.2 for any engineering, audit, or implementation task. Use when a task changes the repository or produces a report."
+description: "This skill should be used when the user asks to \"follow the execution OS\", \"produce a report\", \"change the repository\", or mentions the lifecycle, verification ledger, compliance header, or evidence tags."
 triggers:
 - execution os
 - lifecycle
-- outcome
-- specify
-- verify
+- verification ledger
 - compliance header
 - evidence tag
-- verification ledger
 ---
 
 # Engineering Execution OS

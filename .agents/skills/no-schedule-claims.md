@@ -1,8 +1,10 @@
 ---
+name: no-schedule-claims
+description: "Applies to workflow and YAML files. Do not add a schedule or cron trigger, or claim a scheduled run, without evidence."
 paths:
-  - ".github/workflows/**"
-  - "**/*.yml"
-  - "**/*.yaml"
+  - '.github/workflows/**'
+  - '**/*.yml'
+  - '**/*.yaml'
 ---
 
 WORKFLOW RULE: Do not add a `schedule:` or `cron:` trigger, and do not claim a scheduled run exists, without evidence.

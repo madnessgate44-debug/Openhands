@@ -1,10 +1,9 @@
 ---
 name: openhands-conversation-export
-description: Export OpenHands Cloud conversations to gzip raw JSON plus readable transcripts with SHA-256 hashes and completeness checks, and archive them into a repo. Use when syncing, exporting, backing up, or auditing OpenHands conversation history.
+description: "This skill should be used when the user asks to \"export conversations\", \"sync OpenHands history\", \"back up conversations\", \"archive transcripts\", or mentions gzip raw JSON, completeness checks, or SHA-256 hashes."
 triggers:
 - conversation export
 - conversation sync
-- export conversations
 - transcript
 - openhands cloud
 - conversation history

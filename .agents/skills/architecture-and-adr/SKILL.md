@@ -1,12 +1,11 @@
 ---
 name: architecture-and-adr
-description: "Capture architecture decisions as ADRs and design systems with clear trade-offs. Use when choosing technology, structuring a system, or recording why a decision was made."
+description: "This skill should be used when the user asks to \"write an ADR\", \"design the system\", \"choose a technology\", \"record a decision\", or mentions architecture, trade-offs, or design docs."
 triggers:
 - architecture
 - adr
-- design doc
 - system design
-- tech choice
+- design doc
 - trade-off
 ---
 

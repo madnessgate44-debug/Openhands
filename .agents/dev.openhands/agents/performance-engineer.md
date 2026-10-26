@@ -3,7 +3,7 @@ name: performance-engineer
 description: "Profiles and fixes performance problems. <example>Cut the bundle size</example> <example>Why is the feed slow</example>"
 tools:
   - terminal
-  - browser
+  - browser_tool_set
 model: inherit
 ---
 

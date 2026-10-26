@@ -1,13 +1,12 @@
 ---
 name: playwright-evidence-qa
-description: Browser QA with trustworthy click and overlap evidence using Playwright. Use when testing UI, verifying a UI fix, or measuring whether a control is really reachable.
+description: "This skill should be used when the user asks to \"test the UI in a browser\", \"verify a click works\", \"measure an overlap\", or mentions Playwright, hit-testing, elementFromPoint, or trustworthy UI evidence."
 triggers:
 - playwright
 - browser qa
-- elementfrompoint
-- click test
-- overlap
 - hit test
+- overlap
+- click test
 ---
 
 # Playwright Evidence QA

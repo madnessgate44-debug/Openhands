@@ -1,13 +1,12 @@
 ---
 name: multi-session-pr-coordination
-description: Coordinate work when many OpenHands sessions touch the same repository. Use before opening, updating, or merging any pull request, or when deciding whether to start new work.
+description: "This skill should be used when the user asks to \"open a PR\", \"update a PR\", \"merge\", or when multiple OpenHands sessions touch the same repository and duplicate work or clobbered heads are a risk."
 triggers:
 - pull request
 - pr
-- branch
 - concurrent session
 - merge
-- review
+- branch
 ---
 
 # Multi-Session PR Coordination

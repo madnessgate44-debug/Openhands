@@ -1,13 +1,12 @@
 ---
 name: prd-authoring
-description: "Write product requirement documents and acceptance criteria before implementation. Use when scoping a feature, writing a spec, or turning an idea into testable requirements."
+description: "This skill should be used when the user asks to \"write a PRD\", \"write a spec\", \"define acceptance criteria\", \"scope a feature\", or mentions requirements or user stories."
 triggers:
 - prd
 - requirements
 - spec
 - acceptance criteria
 - user story
-- scope
 ---
 
 # PRD Authoring

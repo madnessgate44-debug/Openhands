@@ -1,13 +1,13 @@
 ---
 name: incident-response
-description: "Handle a production incident from detection to postmortem. Use when something is broken in production or a user reports an outage."
+description: "This skill should be used when the user asks to \"handle an incident\", \"triage an outage\", \"write a postmortem\", or mentions severity, on-call, rollback, or production being down."
 triggers:
 - incident
 - outage
 - sev
 - postmortem
-- on-call
 - rollback
+- on-call
 ---
 
 # Incident Response

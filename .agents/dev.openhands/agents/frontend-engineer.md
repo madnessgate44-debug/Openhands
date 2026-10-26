@@ -4,7 +4,7 @@ description: "Implements UI, state, and styling. <example>Build the collection s
 tools:
   - file_editor
   - terminal
-  - browser
+  - browser_tool_set
 model: inherit
 ---
 

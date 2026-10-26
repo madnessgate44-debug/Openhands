@@ -1,0 +1,26 @@
+{
+  "pre_tool_use": [
+    {
+      "matcher": "terminal",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "f=$(find \"$HOME/.openhands/cache/plugins\" -name guard.sh -path '*/.agents/*' -printf '%T@ %p\\n' 2>/dev/null | sort -rn | head -1 | cut -d' ' -f2-); [ -n \"$f\" ] && exec bash \"$f\"; exit 0",
+          "timeout": 10
+        }
+      ]
+    }
+  ],
+  "stop": [
+    {
+      "matcher": "*",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "f=$(find \"$HOME/.openhands/cache/plugins\" -name quality_gate.sh -path '*/.agents/*' -printf '%T@ %p\\n' 2>/dev/null | sort -rn | head -1 | cut -d' ' -f2-); [ -n \"$f\" ] && exec bash \"$f\"; exit 0",
+          "timeout": 180
+        }
+      ]
+    }
+  ]
+}

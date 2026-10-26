@@ -1,13 +1,13 @@
 ---
 name: accessibility-audit
-description: "Audit and fix accessibility. Use when checking keyboard reachability, contrast, labels, or screen-reader output."
+description: "This skill should be used when the user asks to \"audit accessibility\", \"check keyboard reachability\", \"fix contrast\", \"add ARIA labels\", or mentions WCAG, a11y, screen readers, or focus states."
 triggers:
 - accessibility
 - a11y
 - wcag
-- screen reader
 - contrast
 - keyboard
+- screen reader
 ---
 
 # Accessibility Audit

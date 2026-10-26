@@ -1,6 +1,6 @@
 ---
 name: api-design
-description: "Design and review API contracts. Use when adding or changing an endpoint, a schema, or a client integration."
+description: "This skill should be used when the user asks to \"design an API\", \"add an endpoint\", \"version an API\", \"define a schema\", or mentions REST, GraphQL, payloads, or API contracts."
 triggers:
 - api
 - rest
@@ -8,7 +8,6 @@ triggers:
 - contract
 - schema
 - graphql
-- payload
 ---
 
 # API Design

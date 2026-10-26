@@ -1,13 +1,12 @@
 ---
 name: git-workflow
-description: "Use safe, conventional git workflows. Use when branching, committing, rebasing, or resolving conflicts."
+description: "This skill should be used when the user asks to \"commit\", \"branch\", \"rebase\", \"resolve a conflict\", or mentions conventional commits, force-push safety, or staging changes."
 triggers:
 - git
 - branch
 - commit
 - rebase
 - merge conflict
-- conventional commits
 ---
 
 # Git Workflow

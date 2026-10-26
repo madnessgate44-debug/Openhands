@@ -1,13 +1,12 @@
 ---
 name: observability
-description: "Add logging, metrics, and tracing. Use when instrumenting a service or diagnosing behaviour in production."
+description: "This skill should be used when the user asks to \"add logging\", \"add metrics\", \"add tracing\", \"set up alerts\", or mentions monitoring, instrumentation, or production diagnosis."
 triggers:
 - logging
 - metrics
 - tracing
 - monitoring
 - alerting
-- instrumentation
 ---
 
 # Observability

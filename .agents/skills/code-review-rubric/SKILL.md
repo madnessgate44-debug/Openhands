@@ -1,12 +1,12 @@
 ---
 name: code-review-rubric
-description: "Review a change for correctness, security, and maintainability. Use when reviewing a pull request or another agent's diff."
+description: "This skill should be used when the user asks to \"review this PR\", \"review my diff\", \"check this change for bugs\", or mentions code review, pull request feedback, or correctness and security review."
 triggers:
-- review
 - code review
-- pull request review
-- feedback
+- review
+- pull request
 - diff
+- feedback
 ---
 
 # Code Review Rubric
