@@ -7,6 +7,9 @@
 #  * `git diff --check` sees only the working tree, so it passes vacuously once
 #    the changes are committed. We therefore also check committed changes
 #    against the merge-base with origin/main (falling back to HEAD~1).
+#  * Unpushed work is lost on a sandbox restart, so the gate refuses to finish
+#    while there are uncommitted changes or commits not pushed to upstream.
+#  * Every JSON output is built with python3's json.dumps so it is always valid.
 #  * A loop breaker caps consecutive denials: after MAX_DENIALS the gate allows
 #    the stop and prints a loud warning, so a stuck agent cannot be trapped
 #    forever by a gate it cannot satisfy.
@@ -18,6 +21,11 @@ MAX_DENIALS=3
 project_key="$(printf '%s' "$(pwd)" | cksum | cut -d' ' -f1)"
 state_file="/tmp/openhands_quality_gate_${project_key}"
 
+json_line() {
+  # $1 = decision, $2 = reason. json.dumps guarantees valid escaping.
+  python3 -c 'import json,sys; print(json.dumps({"decision": sys.argv[1], "reason": sys.argv[2]}))' "$1" "$2"
+}
+
 deny() {
   count=0
   [ -f "$state_file" ] && count="$(cat "$state_file" 2>/dev/null || echo 0)"
@@ -26,20 +34,24 @@ deny() {
   printf '%s' "$count" >"$state_file"
   if [ "$count" -gt "$MAX_DENIALS" ]; then
     msg="Quality gate BYPASSED after ${count} consecutive denials (limit ${MAX_DENIALS}). Reason: $1"
-    printf '{"decision":"allow","reason":"%s"}\n' "$msg"
+    json_line allow "$msg"
     exit 0
   fi
-  printf '{"decision":"deny","reason":"%s"}\n' "$1"
+  json_line deny "$1"
   exit 2
 }
 
 clear_state() { rm -f "$state_file" 2>/dev/null || true; }
 
+inside_work_tree() {
+  git rev-parse --is-inside-work-tree >/dev/null 2>&1
+}
+
 # 1. Whitespace errors in the working tree.
-if [ -d .git ]; then
+if inside_work_tree; then
   bad="$(git diff --check 2>/dev/null)"
   if [ -n "$bad" ]; then
-    deny "git diff --check reports whitespace errors in the working tree (often a trailing blank line at EOF). Fix them before finishing: perl -0pi -e 's/\\n+\\z/\\n/' <files>"
+    deny "git diff --check reports whitespace errors in the working tree (often a trailing blank line at EOF). Fix them before finishing: perl -0pi -e 's/\n+\z/\n/' <files>"
   fi
 
   # 2. Whitespace errors in committed changes, which `git diff --check` misses.
@@ -54,12 +66,34 @@ if [ -d .git ]; then
       deny "git diff --check reports whitespace errors in committed changes (base ${base}). Fix them before finishing."
     fi
   fi
+
+  # 3. Unpushed work: a sandbox restart wipes uncommitted and unpushed changes.
+  if git remote get-url origin >/dev/null 2>&1; then
+    if [ -n "$(git status --porcelain 2>/dev/null)" ]; then
+      deny "There are uncommitted changes. Commit and push before finishing: git add -A && git commit -m \"...\" && git push -u origin HEAD"
+    fi
+    upstream="$(git rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null)"
+    if [ -n "$upstream" ]; then
+      ahead="$(git rev-list --count "${upstream}..HEAD" 2>/dev/null || echo 0)"
+    elif git rev-parse --verify -q origin/main >/dev/null 2>&1; then
+      ahead="$(git rev-list --count origin/main..HEAD 2>/dev/null || echo 0)"
+    else
+      ahead=0
+    fi
+    if [ "${ahead:-0}" -gt 0 ]; then
+      deny "There are ${ahead} commit(s) not pushed. Push before finishing: git push -u origin HEAD"
+    fi
+  fi
 fi
 
-# 3. Typecheck gate, only if a script exists.
+# 4. Typecheck gate, only if a script exists and dependencies are installed.
 if [ -f package.json ] && grep -q '"typecheck"' package.json 2>/dev/null; then
-  if ! npm run --silent typecheck >/tmp/tsc_gate.log 2>&1; then
-    deny "Typecheck failed. Fix the errors before finishing (see /tmp/tsc_gate.log)."
+  if [ -d node_modules ]; then
+    if ! npm run --silent typecheck >/tmp/tsc_gate.log 2>&1; then
+      deny "Typecheck failed. Fix the errors before finishing (see /tmp/tsc_gate.log)."
+    fi
+  else
+    echo "typecheck skipped: dependencies not installed" >&2
   fi
 fi
 

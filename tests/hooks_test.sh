@@ -217,6 +217,160 @@ fi
 
 rm -rf "$tmpdir" "/tmp/openhands_quality_gate_${key}"
 
+echo "=== quality_gate.sh: deny output is valid JSON ==="
+# Every deny/allow line must parse as JSON (the old message had a literal \z).
+json_tmp="$(mktemp -d)"
+(
+  cd "$json_tmp" || exit 1
+  git init -q
+  git config user.email t@t.t
+  git config user.name t
+  printf 'x\n' > f.txt
+  git add f.txt
+  git commit -qm init
+  printf 'x\n\n\n' > f.txt   # whitespace error -> deny
+) >/dev/null 2>&1
+jkey="$(printf '%s' "$json_tmp" | cksum | cut -d' ' -f1)"
+rm -f "/tmp/openhands_quality_gate_${jkey}"
+jout="$( cd "$json_tmp" && OPENHANDS_PROJECT_DIR="$json_tmp" bash "$GATE" )"
+if printf '%s' "$jout" | python3 -c 'import json,sys; json.load(sys.stdin)' 2>/dev/null; then
+  PASS=$((PASS + 1)); printf 'PASS gate deny output is valid JSON\n'
+else
+  FAIL=$((FAIL + 1)); printf 'FAIL gate deny output is not valid JSON (%s)\n' "$jout"
+fi
+if printf '%s' "$jout" | grep -q '"decision": *"deny"'; then
+  PASS=$((PASS + 1)); printf 'PASS gate whitespace deny is a deny decision\n'
+else
+  FAIL=$((FAIL + 1)); printf 'FAIL gate whitespace decision (%s)\n' "$jout"
+fi
+rm -rf "$json_tmp" "/tmp/openhands_quality_gate_${jkey}"
+
+echo "=== quality_gate.sh: typecheck skipped without node_modules ==="
+tc_tmp="$(mktemp -d)"
+(
+  cd "$tc_tmp" || exit 1
+  git init -q
+  git config user.email t@t.t
+  git config user.name t
+  printf '{"scripts":{"typecheck":"tsc --noEmit"}}\n' > package.json
+  printf 'x\n' > f.txt
+  git add -A
+  git commit -qm init
+) >/dev/null 2>&1
+tckey="$(printf '%s' "$tc_tmp" | cksum | cut -d' ' -f1)"
+rm -f "/tmp/openhands_quality_gate_${tckey}"
+tcout="$( cd "$tc_tmp" && OPENHANDS_PROJECT_DIR="$tc_tmp" bash "$GATE" 2>&1; echo "rc=$?" )"
+if printf '%s' "$tcout" | grep -q 'rc=0' && printf '%s' "$tcout" | grep -qi 'typecheck skipped'; then
+  PASS=$((PASS + 1)); printf 'PASS gate typecheck skipped without node_modules\n'
+else
+  FAIL=$((FAIL + 1)); printf 'FAIL gate typecheck skip (%s)\n' "$tcout"
+fi
+rm -rf "$tc_tmp" "/tmp/openhands_quality_gate_${tckey}"
+
+echo "=== quality_gate.sh: unpushed work ==="
+up_tmp="$(mktemp -d)"
+bare="$up_tmp/origin.git"
+work="$up_tmp/work"
+git init -q --bare "$bare"
+(
+  cd "$up_tmp" || exit 1
+  git clone -q "$bare" work
+  cd work || exit 1
+  git config user.email t@t.t
+  git config user.name t
+  printf 'x\n' > f.txt
+  git add f.txt
+  git commit -qm init
+  git push -q -u origin HEAD 2>/dev/null || git push -q -u origin master
+) >/dev/null 2>&1
+upkey="$(printf '%s' "$work" | cksum | cut -d' ' -f1)"
+# unpushed commit -> deny
+(
+  cd "$work" || exit 1
+  printf 'y\n' >> f.txt
+  git add f.txt
+  git commit -qm second
+) >/dev/null 2>&1
+rm -f "/tmp/openhands_quality_gate_${upkey}"
+upout="$( cd "$work" && OPENHANDS_PROJECT_DIR="$work" bash "$GATE"; echo "rc=$?" )"
+if printf '%s' "$upout" | grep -q 'rc=2' && printf '%s' "$upout" | grep -q 'not pushed'; then
+  PASS=$((PASS + 1)); printf 'PASS gate unpushed commit denies\n'
+else
+  FAIL=$((FAIL + 1)); printf 'FAIL gate unpushed commit (%s)\n' "$upout"
+fi
+# push it -> allow
+(
+  cd "$work" || exit 1
+  git push -q origin HEAD 2>/dev/null || git push -q origin master
+) >/dev/null 2>&1
+rm -f "/tmp/openhands_quality_gate_${upkey}"
+upout2="$( cd "$work" && OPENHANDS_PROJECT_DIR="$work" bash "$GATE"; echo "rc=$?" )"
+if printf '%s' "$upout2" | grep -q 'rc=0'; then
+  PASS=$((PASS + 1)); printf 'PASS gate pushed commit allows\n'
+else
+  FAIL=$((FAIL + 1)); printf 'FAIL gate pushed commit (%s)\n' "$upout2"
+fi
+# uncommitted change -> deny
+(
+  cd "$work" || exit 1
+  printf 'z\n' >> f.txt
+) >/dev/null 2>&1
+rm -f "/tmp/openhands_quality_gate_${upkey}"
+upout3="$( cd "$work" && OPENHANDS_PROJECT_DIR="$work" bash "$GATE"; echo "rc=$?" )"
+if printf '%s' "$upout3" | grep -q 'rc=2' && printf '%s' "$upout3" | grep -q 'uncommitted'; then
+  PASS=$((PASS + 1)); printf 'PASS gate uncommitted change denies\n'
+else
+  FAIL=$((FAIL + 1)); printf 'FAIL gate uncommitted change (%s)\n' "$upout3"
+fi
+rm -rf "$up_tmp" "/tmp/openhands_quality_gate_${upkey}"
+
+echo "=== quality_gate.sh: committed whitespace is caught ==="
+cw_tmp="$(mktemp -d)"
+(
+  cd "$cw_tmp" || exit 1
+  git init -q
+  git config user.email t@t.t
+  git config user.name t
+  printf 'x\n' > f.txt
+  git add f.txt
+  git commit -qm init
+  printf 'x\n\n\n' > f.txt   # committed trailing blank line
+  git add f.txt
+  git commit -qm bad
+) >/dev/null 2>&1
+cwkey="$(printf '%s' "$cw_tmp" | cksum | cut -d' ' -f1)"
+rm -f "/tmp/openhands_quality_gate_${cwkey}"
+cwout="$( cd "$cw_tmp" && OPENHANDS_PROJECT_DIR="$cw_tmp" bash "$GATE"; echo "rc=$?" )"
+if printf '%s' "$cwout" | grep -q 'rc=2'; then
+  PASS=$((PASS + 1)); printf 'PASS gate committed whitespace denies\n'
+else
+  FAIL=$((FAIL + 1)); printf 'FAIL gate committed whitespace (%s)\n' "$cwout"
+fi
+rm -rf "$cw_tmp" "/tmp/openhands_quality_gate_${cwkey}"
+
+echo "=== quality_gate.sh: worktree is not skipped ==="
+wt_tmp="$(mktemp -d)"
+git init -q "$wt_tmp/main" 2>/dev/null
+(
+  cd "$wt_tmp/main" || exit 1
+  git config user.email t@t.t
+  git config user.name t
+  printf 'x\n' > f.txt
+  git add f.txt
+  git commit -qm init
+  git worktree add -q "$wt_tmp/wt" -b wtest
+  printf 'x\n\n\n' > "$wt_tmp/wt/f.txt"   # whitespace error inside the worktree
+) >/dev/null 2>&1
+wtkey="$(printf '%s' "$wt_tmp/wt" | cksum | cut -d' ' -f1)"
+rm -f "/tmp/openhands_quality_gate_${wtkey}"
+wtout="$( cd "$wt_tmp/wt" && OPENHANDS_PROJECT_DIR="$wt_tmp/wt" bash "$GATE"; echo "rc=$?" )"
+if printf '%s' "$wtout" | grep -q 'rc=2'; then
+  PASS=$((PASS + 1)); printf 'PASS gate runs inside a worktree\n'
+else
+  FAIL=$((FAIL + 1)); printf 'FAIL gate worktree not enforced (%s)\n' "$wtout"
+fi
+rm -rf "$wt_tmp" "/tmp/openhands_quality_gate_${wtkey}"
+
 echo
 echo "-----------------------------------"
 printf 'TOTAL: %s passed, %s failed\n' "$PASS" "$FAIL"
