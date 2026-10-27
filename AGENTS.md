@@ -10,7 +10,7 @@ that load into every conversation. It is registered as a personal marketplace
 .agents/                     # the marketplace root (repo_path)
   .plugin/marketplace.json   # marketplace manifest: declares one plugin
   plugin.json                # Agent Plugins 1.0.0 manifest (the plugin)
-  skills/<name>/SKILL.md     # 25 keyword-triggered skills (AgentSkills format)
+  skills/<name>/SKILL.md     # 31 keyword-triggered skills (AgentSkills format)
   skills/<name>.md           # 3 path-triggered rules (frontmatter `paths:`)
   dev.openhands/
     agents/<name>.md         # 19 sub-agents (YAML frontmatter)

@@ -6,7 +6,7 @@ marketplace with `auto_load: true`, so every conversation picks them up.
 
 ## What is here
 
-- **28 skills** — 25 keyword-triggered skills plus 3 path-triggered rules.
+- **34 skills** — 31 keyword-triggered skills plus 3 path-triggered rules.
 - **19 sub-agents** — a full software company plus project-specific roles.
 - **2 lifecycle hooks** — a destructive-command guard (PreToolUse) and a quality gate (Stop).
 
@@ -16,7 +16,7 @@ marketplace with `auto_load: true`, so every conversation picks them up.
 .agents/                      # the marketplace root (repo_path = ".agents")
   .plugin/marketplace.json    # marketplace manifest: declares one plugin
   plugin.json                 # Agent Plugins 1.0.0 manifest (the plugin itself)
-  skills/<name>/SKILL.md      # 25 keyword-triggered skills (AgentSkills format)
+  skills/<name>/SKILL.md      # 31 keyword-triggered skills (AgentSkills format)
   skills/<name>.md            # 3 path-triggered rules (frontmatter `paths:`)
   dev.openhands/
     agents/<name>.md          # 19 sub-agents
@@ -36,7 +36,7 @@ them under `dev.openhands/`. Removing the plugin declaration silently drops 19 a
 
 | Component | Count | Loads because |
 | - | - | - |
-| Skills | 25 | `skills/<name>/SKILL.md`, keyword `triggers:` |
+| Skills | 31 | `skills/<name>/SKILL.md`, keyword `triggers:` |
 | Path rules | 3 | `skills/<name>.md`, `paths:` globs |
 | Sub-agents | 19 | plugin → `dev.openhands/agents/*.md` |
 | Hooks | 2 | plugin → `dev.openhands/hooks/hooks.json` |
@@ -78,5 +78,5 @@ Loaded from a fresh clone with `openhands-sdk` 1.58.2:
 
 ```
 marketplace: openhands-account | plugins: ['account-library']
-skills 28 agents 19 hooks ['post_tool_use', 'pre_tool_use', 'session_end', 'session_start', 'stop', 'user_prompt_submit']
+skills 34 agents 19 hooks ['post_tool_use', 'pre_tool_use', 'session_end', 'session_start', 'stop', 'user_prompt_submit']
 ```
