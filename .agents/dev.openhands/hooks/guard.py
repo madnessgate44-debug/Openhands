@@ -11,6 +11,9 @@ evaluated against those tokens rather than raw substrings. This avoids the two
 failure modes of substring matching -- bypasses (extra spaces, quoting, flags
 split across argv) and false positives (a branch name that merely contains
 "main").
+
+The guard stops honest mistakes. It is not a security boundary: a determined
+command can get around it. See the README Hooks section.
 """
 from __future__ import annotations
 
@@ -19,19 +22,7 @@ import re
 import shlex
 import sys
 
-
-def read_command() -> str:
-    try:
-        payload = json.load(sys.stdin)
-    except Exception:
-        return ""
-    if not isinstance(payload, dict):
-        return ""
-    tool_input = payload.get("tool_input")
-    if not isinstance(tool_input, dict):
-        return ""
-    command = tool_input.get("command")
-    return command if isinstance(command, str) else ""
+MAX_DEPTH = 3
 
 
 def tokens(command: str) -> list[str]:
@@ -72,8 +63,53 @@ def deny(reason: str) -> None:
     sys.exit(2)
 
 
+def prog_of(tok: str) -> str:
+    return tok.rsplit("/", 1)[-1]
+
+
+# --------------------------------------------------------------------------- #
+# git
+# --------------------------------------------------------------------------- #
+
+# git global options that take a separate value, and flag-only options, skipped
+# before the subcommand is read.
+GIT_VALUE_OPTS = {
+    "-C", "-c", "--git-dir", "--work-tree", "--namespace",
+    "--exec-path", "--config-env", "--super-prefix",
+}
+GIT_FLAG_OPTS = {
+    "--no-pager", "--no-replace-objects", "-p", "--paginate", "--bare",
+    "--literal-pathspecs", "--glob-pathspecs", "--noglob-pathspecs",
+    "--icase-pathspecs", "--version", "--help", "-P", "--no-optional-locks",
+    "--no-advice", "--no-lazy-fetch",
+}
 FORCE_FLAGS = {"-f", "--force", "--force-with-lease", "--force-if-includes"}
 PROTECTED = {"main", "master"}
+SHORT_FORCE = "f"
+
+
+def git_subcommand(argv: list[str]) -> tuple[str | None, int]:
+    """Return (subcommand, index) skipping git's global options."""
+    if not argv or prog_of(argv[0]) != "git":
+        return None, -1
+    i = 1
+    while i < len(argv):
+        t = argv[i]
+        if t in GIT_VALUE_OPTS:
+            i += 2
+            continue
+        if t.startswith("--") and any(t.startswith(o + "=") for o in GIT_VALUE_OPTS):
+            i += 1
+            continue
+        if t in GIT_FLAG_OPTS:
+            i += 1
+            continue
+        if t.startswith("-"):
+            # `-C<path>` / `-c<kv>` written without a space, or any other flag.
+            i += 1
+            continue
+        return t, i
+    return None, -1
 
 
 def is_refspec_to_protected(tok: str) -> bool:
@@ -82,43 +118,79 @@ def is_refspec_to_protected(tok: str) -> bool:
     if ":" not in body:
         return False
     dst = body.split(":", 1)[1]
-    short = dst.rsplit("/", 1)[-1]
-    return short in PROTECTED
+    return dst.rsplit("/", 1)[-1] in PROTECTED
 
 
-def check_git_push(argv: list[str]) -> None:
-    if len(argv) < 2 or argv[0] != "git" or argv[1] != "push":
+def push_is_force(rest: list[str]) -> bool:
+    for t in rest:
+        if t in FORCE_FLAGS or t.startswith("--force-with-lease") or t.startswith("--force-if-includes"):
+            return True
+        if t.startswith("+"):
+            return True
+        if t.startswith("-") and not t.startswith("--") and len(t) > 1:
+            if SHORT_FORCE in t[1:]:
+                return True
+    return False
+
+
+def short_group_has(tok: str, letter: str) -> bool:
+    return tok.startswith("-") and not tok.startswith("--") and letter in tok[1:]
+
+
+def check_git(argv: list[str]) -> None:
+    sub, idx = git_subcommand(argv)
+    if sub is None:
         return
-    rest = argv[2:]
+    rest = argv[idx + 1:]
+
     if any(t == "--no-verify" or t.startswith("--no-verify") for t in rest):
         deny("Refusing to bypass git hooks with --no-verify.")
-    force = any(t in FORCE_FLAGS for t in rest) or any(
-        t.startswith("--force-with-lease") for t in rest
-    )
+
+    if sub == "commit" and any(short_group_has(t, "n") for t in rest):
+        deny("Refusing to bypass git hooks with `git commit -n` (--no-verify).")
+
+    if sub != "push":
+        return
+
+    for flag in ("--all", "--mirror"):
+        if flag in rest:
+            deny(
+                f"Refusing `git push {flag}`; it can include main/master. "
+                "Push one branch and open a pull request."
+            )
+    if push_is_force(rest):
+        deny("Refusing to force-push (--force/-f/-fu/--force-with-lease/+ref). Push to a branch instead.")
+
     positionals = [t for t in rest if not t.startswith("-")]
     ref_args = positionals[1:] if positionals else []
-    targets_protected = False
     for tok in ref_args:
-        if is_refspec_to_protected(tok):
-            targets_protected = True
-            break
-        if tok.rsplit("/", 1)[-1] in PROTECTED:
-            targets_protected = True
-            break
-    if force:
-        deny("Refusing to force-push (--force/-f/--force-with-lease). Push to a branch instead.")
-    if targets_protected:
-        deny(
-            "Refusing to push to main/master (including HEAD:main and refspecs). "
-            "Push to a branch and open a pull request."
-        )
+        if is_refspec_to_protected(tok) or tok.rsplit("/", 1)[-1] in PROTECTED:
+            deny(
+                "Refusing to push to main/master (including HEAD:main and refspecs). "
+                "Push to a branch and open a pull request."
+            )
 
 
-RM_TARGETS = {"/", "/*", "~", "~/", "$HOME", "${HOME}", "~/*"}
+# --------------------------------------------------------------------------- #
+# rm -rf
+# --------------------------------------------------------------------------- #
+
+SYSTEM_DIRS = {
+    "/bin", "/boot", "/dev", "/etc", "/home", "/lib", "/opt", "/proc",
+    "/root", "/sbin", "/sys", "/usr", "/var", "/lib64", "/srv", "/run",
+}
+RM_DENY = {"/", "/*", "~", "~/", "~/*", "$HOME", "${HOME}", ".git", ".", ".."} | SYSTEM_DIRS
+
+
+def norm_target(t: str) -> str:
+    t = t.strip().strip('"').strip("'")
+    while len(t) > 1 and t.endswith("/"):
+        t = t[:-1]
+    return t
 
 
 def check_rm(argv: list[str]) -> None:
-    if not argv or argv[0] != "rm":
+    if not argv or prog_of(argv[0]) != "rm":
         return
     recursive = False
     targets: list[str] = []
@@ -135,68 +207,188 @@ def check_rm(argv: list[str]) -> None:
     if not recursive:
         return
     for t in targets:
-        if t in RM_TARGETS or t.rstrip("/") in {"", "~"}:
-            deny(f"Refusing a recursive delete of a filesystem-root or home path: {t}")
+        if norm_target(t) in RM_DENY:
+            deny(f"Refusing a recursive delete of a filesystem-root, home or system path: {t}")
 
 
-SECRET_VARS = re.compile(
-    r"\$(?:\{)?(GITHUB_TOKEN|OPENHANDS_API_KEY|VERCEL_TOKEN|AWS_SECRET_ACCESS_KEY|GH_TOKEN)(?:\})?"
-)
+# --------------------------------------------------------------------------- #
+# secrets
+# --------------------------------------------------------------------------- #
+
+SECRET_NAME = re.compile(r"(?i)(TOKEN|SECRET|PASSWORD|PASSWD|API_?KEY|PRIVATE_?KEY|CREDENTIAL)")
+VAR_RE = re.compile(r"\$\{?([A-Za-z_][A-Za-z0-9_]*)\}?")
+NAME_ONLY = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+
 # Commands that write their arguments to stdout. A secret var passed to one of
 # these lands in the transcript; a secret var used for auth (a URL or header) does not.
 PRINTERS = {
-    "echo", "printf", "printenv", "env", "set", "export",
+    "echo", "printf", "set", "export",
     "cat", "bat", "less", "more", "head", "tail", "tee",
 }
+
+
+def token_has_secret_var(tok: str) -> bool:
+    return any(SECRET_NAME.search(m.group(1)) for m in VAR_RE.finditer(tok))
 
 
 def check_secret_print(argv: list[str]) -> None:
     if not argv:
         return
-    prog = argv[0].rsplit("/", 1)[-1]
-    if prog in ("printenv", "env") and len(argv) == 1:
-        deny(f"Refusing to dump all environment secrets with {prog}.")
+    prog = prog_of(argv[0])
+    if prog == "printenv":
+        args = [a for a in argv[1:] if not a.startswith("-")]
+        if not args:
+            deny("Refusing to dump all environment secrets with printenv.")
+        for a in args:
+            if SECRET_NAME.search(a):
+                deny(f"Refusing to print the secret environment variable {a} to the transcript.")
+        return
+    if prog == "env":
+        if len(argv) == 1:
+            deny("Refusing to dump all environment secrets with env.")
+        for a in argv[1:]:
+            if a.startswith("-") or "=" in a:
+                continue
+            if NAME_ONLY.match(a) and SECRET_NAME.search(a):
+                deny(f"Refusing to print the secret environment variable {a} to the transcript.")
+        return
     if prog not in PRINTERS:
         return
     for tok in argv[1:]:
-        if SECRET_VARS.search(tok):
+        if token_has_secret_var(tok):
             deny("Refusing to print an environment secret value to the transcript.")
-        base = tok.rsplit("/", 1)[-1]
+        base = prog_of(tok)
         if tok.startswith("/proc/") and "environ" in tok:
             deny("Refusing to read /proc/*/environ (process secrets).")
         if re.fullmatch(r"\.env(\.[\w.-]+)?", base):
             deny(f"Refusing to read a .env file ({tok}) into the transcript.")
 
 
-PIPE_SHELLS = {"sh", "bash", "zsh", "dash", "ksh", "fish"}
+# --------------------------------------------------------------------------- #
+# pipes and wrappers
+# --------------------------------------------------------------------------- #
+
+INTERPRETERS = {"sh", "bash", "zsh", "dash", "ksh", "fish", "python", "python3", "node", "perl", "ruby"}
+WRAP_SHELLS = {"sh", "bash", "zsh", "dash", "ksh", "fish"}
+WRAP_PREFIX = {"sudo", "command", "nohup", "time", "env", "setsid", "stdbuf", "nice", "ionice"}
+VALUE_OPTS = {
+    "sudo": {"-u", "-g", "-p", "-C", "-h", "-r", "-t", "-U", "--user", "--group", "--prompt"},
+    "timeout": {"-s", "-k", "--signal", "--kill-after"},
+    "xargs": {"-I", "-n", "-P", "-L", "-s", "-a", "-d", "-E", "--max-args", "--max-procs"},
+}
 
 
-def check_pipe_to_shell(argv: list[str]) -> None:
-    """Deny `curl ... | sh` / `wget ... | bash` style remote-code execution."""
+def check_pipe(argv: list[str]) -> None:
     segs = segments(argv)
     for i, seg in enumerate(segs[:-1]):
-        if not seg:
-            continue
-        prog = seg[0].rsplit("/", 1)[-1]
-        if prog not in {"curl", "wget"}:
+        if not seg or prog_of(seg[0]) not in {"curl", "wget"}:
             continue
         nxt = segs[i + 1]
-        if nxt and nxt[0].rsplit("/", 1)[-1] in PIPE_SHELLS:
-            deny(f"Refusing to pipe {prog} output directly into a shell.")
+        j = 0
+        while j < len(nxt) and prog_of(nxt[j]) in WRAP_PREFIX:
+            j += 1
+        if j < len(nxt) and prog_of(nxt[j]) in INTERPRETERS:
+            deny(f"Refusing to pipe {prog_of(seg[0])} output directly into {prog_of(nxt[j])}.")
 
 
-def main() -> int:
-    command = read_command()
-    if not command.strip():
-        return 0
+def unwrap(seg: list[str]) -> list[str]:
+    """Inner command strings hidden behind a wrapper in this segment."""
+    if not seg:
+        return []
+    prog = prog_of(seg[0])
+    args = seg[1:]
+    if prog in WRAP_SHELLS:
+        if "-c" in args:
+            k = args.index("-c")
+            if k + 1 < len(args) and args[k + 1]:
+                return [args[k + 1]]
+        return []
+    if prog in ("sudo", "timeout", "xargs"):
+        opts = VALUE_OPTS[prog]
+        i = 0
+        while i < len(args) and args[i].startswith("-"):
+            i += 2 if args[i] in opts and i + 1 < len(args) else 1
+        if prog == "timeout" and i < len(args):
+            i += 1  # skip the duration
+        return [" ".join(args[i:])] if args[i:] else []
+    if prog == "command":
+        i = 0
+        while i < len(args) and args[i].startswith("-"):
+            i += 1
+        return [" ".join(args[i:])] if args[i:] else []
+    if prog in ("nohup", "time", "setsid", "stdbuf", "nice", "ionice"):
+        i = 0
+        while i < len(args) and args[i].startswith("-"):
+            i += 1
+        return [" ".join(args[i:])] if args[i:] else []
+    if prog == "env":
+        i = 0
+        while i < len(args):
+            a = args[i]
+            if a.startswith("-"):
+                i += 1
+                continue
+            if re.match(r"[A-Za-z_][A-Za-z0-9_]*=", a):
+                i += 1
+                continue
+            break
+        return [" ".join(args[i:])] if args[i:] else []
+    if prog == "eval":
+        return [" ".join(args)] if args else []
+    return []
+
+
+PROC_SUB = re.compile(
+    r"(?<![\w])(bash|sh|zsh|dash|ksh|fish|source|python3?|node|perl|ruby)\s+<\(\s*(curl|wget)\b"
+)
+SUBST_DOLLAR = re.compile(r"\$\(([^()]*)\)")
+SUBST_TICK = re.compile(r"`([^`]*)`")
+
+
+def check_all(command: str, depth: int = 0) -> None:
+    if depth > MAX_DEPTH:
+        return
+    command = command.strip()
+    if not command:
+        return
     argv = tokens(command)
     for seg in segments(argv):
         if not seg:
             continue
-        check_git_push(seg)
+        check_git(seg)
         check_rm(seg)
         check_secret_print(seg)
-    check_pipe_to_shell(argv)
+        for inner in unwrap(seg):
+            check_all(inner, depth + 1)
+    check_pipe(argv)
+    for m in SUBST_DOLLAR.finditer(command):
+        check_all(m.group(1), depth + 1)
+    for m in SUBST_TICK.finditer(command):
+        check_all(m.group(1), depth + 1)
+    if PROC_SUB.search(command):
+        deny("Refusing to run a downloaded script via process substitution (<(...)).")
+
+
+def main() -> int:
+    try:
+        payload = json.load(sys.stdin)
+    except Exception:
+        print(
+            "account-library guard: could not read the hook payload as JSON; allowing.",
+            file=sys.stderr,
+        )
+        return 0
+    if not isinstance(payload, dict):
+        print(
+            "account-library guard: hook payload is not an object; allowing.",
+            file=sys.stderr,
+        )
+        return 0
+    tool_input = payload.get("tool_input")
+    command = tool_input.get("command") if isinstance(tool_input, dict) else None
+    if not isinstance(command, str) or not command.strip():
+        return 0
+    check_all(command)
     return 0
 
 
