@@ -15,7 +15,12 @@ that load into every conversation. It is registered as a personal marketplace
   dev.openhands/
     agents/<name>.md         # 19 sub-agents (YAML frontmatter)
     hooks/hooks.json         # lifecycle hooks
-    hooks/*.sh               # hook scripts
+    hooks/guard.py           # PreToolUse guard decision logic
+    hooks/guard.sh           # PreToolUse guard wrapper -> guard.py
+    hooks/quality_gate.sh    # Stop gate
+scripts/validate.py          # validates every manifest, frontmatter, skill and hook
+tests/hooks_test.sh          # exercises the guard and the quality gate
+.github/workflows/validate.yml  # runs both on every PR
 ```
 
 A marketplace alone loads **only** skills. Agents and hooks load because the marketplace declares a
@@ -31,5 +36,7 @@ indirection: dropping it silently drops the agents and hooks.
 - Sub-agent `skills:` resolve against the **workspace**, not this plugin, so do not wire plugin
   skills into a sub-agent; that fails whenever the workspace lacks them.
 - Validate before committing: `python3 scripts/validate.py` (parses every manifest, frontmatter,
-  skill trigger and hook). A single malformed file silently drops that component.
+  skill trigger and hook) and `bash tests/hooks_test.sh` (guard allow/deny cases and the quality-gate
+  loop breaker). CI runs both on every pull request. A single malformed file silently drops that
+  component.
 - Start a new conversation after changing a component for the catalog to rebuild.
