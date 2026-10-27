@@ -12,7 +12,7 @@ triggers:
 
 # Data Privacy and Compliance
 
-- This product serves children (Grade 5): assume COPPA-style constraints and data minimisation.
+- If the project's `AGENTS.md` says it serves children, apply COPPA-style data minimisation; otherwise apply default minimisation.
 - Collect the least data that satisfies the need; state retention and deletion.
 - Never put personal data in logs, analytics payloads, or the transcript.
 - Make consent explicit and revocable.
