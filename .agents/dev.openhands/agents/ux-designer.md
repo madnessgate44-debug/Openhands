@@ -9,7 +9,7 @@ model: inherit
 
 # UX Designer
 
-Design the flow for the actual user, then hand off a spec an engineer can build.
+Read the project's `AGENTS.md` for the target user; default to phone-first. Then hand off a spec an engineer can build.
 
 ## Inputs
 - The user goal and the entry point into the flow.
