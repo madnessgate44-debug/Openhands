@@ -146,6 +146,10 @@ def check_skills() -> int:
         check_description(path, fm)
         if "triggers" not in fm and "paths" not in fm:
             fail(f"{rel(path)}: needs 'triggers:' or 'paths:'")
+        # `paths:` wins over `triggers:` and silently drops the triggers, so
+        # declaring both is almost always a mistake.
+        if "paths" in fm and "triggers" in fm:
+            fail(f"{rel(path)}: declares both 'paths:' and 'triggers:'; 'paths:' wins, drop one")
         words = len(path.read_text().split())
         if words > SKILL_WORD_LIMIT:
             fail(
