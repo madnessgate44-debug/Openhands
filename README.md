@@ -21,8 +21,11 @@ marketplace with `auto_load: true`, so every conversation picks them up.
   dev.openhands/
     agents/<name>.md          # 19 sub-agents
     hooks/hooks.json          # lifecycle hooks
-    hooks/*.sh                # hook scripts
+    hooks/guard.py            # PreToolUse guard (decision logic)
+    hooks/guard.sh            # PreToolUse guard (thin wrapper -> guard.py)
+    hooks/quality_gate.sh     # Stop gate
 scripts/validate.py           # validates every manifest, frontmatter, skill and hook
+tests/hooks_test.sh           # exercises the guard and the quality gate
 ```
 
 Why the indirection: a marketplace on its own loads **only** skills. Sub-agents and hooks load
@@ -38,6 +41,18 @@ them under `dev.openhands/`. Removing the plugin declaration silently drops 19 a
 | Sub-agents | 19 | plugin → `dev.openhands/agents/*.md` |
 | Hooks | 2 | plugin → `dev.openhands/hooks/hooks.json` |
 
+## Hooks
+
+- **`pre_tool_use` → `guard.py`** denies destructive or secret-leaking terminal commands: force-push
+  and push to `main`/`master` (including `HEAD:main` and refspecs), `--no-verify`, `rm -rf` of `/`
+  or `~`, printing secrets (`echo $TOKEN`, bare `printenv`/`env`, `cat /proc/*/environ`, `cat .env*`),
+  and `curl`/`wget` piped into a shell. It parses the hook JSON and splits the command into real
+  argv tokens, so a branch name that merely contains `main` is not a false positive.
+- **`stop` → `quality_gate.sh`** refuses to finish while `git diff --check` reports whitespace
+  errors (in the worktree *and* in committed changes vs `origin/main`), or while a project
+  typecheck fails. A loop breaker allows the stop after 3 consecutive denials and prints a warning,
+  so a stuck agent is never trapped.
+
 ## Registration
 
 ```bash
@@ -49,8 +64,19 @@ curl -X POST -H "Authorization: Bearer $OPENHANDS_API_KEY" -H "Content-Type: app
 ## Validating a change
 
 ```bash
-python3 scripts/validate.py
+python3 scripts/validate.py    # manifests, frontmatter, skills, sub-agents, hooks
+bash tests/hooks_test.sh       # guard allow/deny cases and the quality-gate loop breaker
 ```
 
-A single malformed file silently drops that component from the catalog, so run this before
-committing. Start a new conversation afterwards for the catalog to rebuild.
+A single malformed file silently drops that component from the catalog, so run both before
+committing. CI runs them on every pull request (`.github/workflows/validate.yml`). Start a new
+conversation afterwards for the catalog to rebuild.
+
+## Verified loading
+
+Loaded from a fresh clone with `openhands-sdk` 1.58.2:
+
+```
+marketplace: openhands-account | plugins: ['account-library']
+skills 28 agents 19 hooks ['post_tool_use', 'pre_tool_use', 'session_end', 'session_start', 'stop', 'user_prompt_submit']
+```
