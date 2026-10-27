@@ -68,8 +68,11 @@ if inside_work_tree; then
   fi
 
   # 3. Unpushed work: a sandbox restart wipes uncommitted and unpushed changes.
+  #    `.openhands/` is the agent's own memory directory (untracked by design),
+  #    not task work, so exclude it from the dirty check.
   if git remote get-url origin >/dev/null 2>&1; then
-    if [ -n "$(git status --porcelain 2>/dev/null)" ]; then
+    dirty="$(git status --porcelain -- . ':(exclude).openhands' 2>/dev/null)"
+    if [ -n "$dirty" ]; then
       deny "There are uncommitted changes. Commit and push before finishing: git add -A && git commit -m \"...\" && git push -u origin HEAD"
     fi
     upstream="$(git rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null)"
