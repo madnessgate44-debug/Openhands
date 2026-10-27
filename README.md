@@ -25,6 +25,7 @@ marketplace with `auto_load: true`, so every conversation picks them up.
     hooks/guard.sh            # PreToolUse guard (thin wrapper -> guard.py)
     hooks/quality_gate.sh     # Stop gate
 scripts/validate.py           # validates every manifest, frontmatter, skill and hook
+scripts/loader_smoke.py       # loads the plugin through the real OpenHands SDK loader
 tests/hooks_test.sh           # exercises the guard and the quality gate
 ```
 
@@ -55,22 +56,36 @@ them under `dev.openhands/`. Removing the plugin declaration silently drops 19 a
 
 ## Registration
 
+The marketplace is stored in the account settings at `POST /api/v1/settings`
+([Store Settings](https://docs.openhands.dev/openhands/usage/cloud/api-reference/settings/store-settings)).
+The settings endpoint accepts either `Authorization: Bearer <key>` or `X-Access-Token: <key>`
+(both verified live, HTTP 200):
+
 ```bash
 curl -X POST -H "Authorization: Bearer $OPENHANDS_API_KEY" -H "Content-Type: application/json" \
   -d '[{"name":"openhands-account","source":"github:madnessgate44-debug/Openhands","repo_path":".agents","auto_load":true}]' \
   https://app.all-hands.dev/api/v1/settings
 ```
 
+`GET /api/v1/settings` shows the saved entry under `registered_marketplaces`, with fields
+`name`, `source`, `ref`, `repo_path`, `auto_load` and `scope`.
+
 ## Validating a change
 
 ```bash
-python3 scripts/validate.py    # manifests, frontmatter, skills, sub-agents, hooks
-bash tests/hooks_test.sh       # guard allow/deny cases and the quality-gate loop breaker
+python3 scripts/validate.py        # manifests, frontmatter, skills, sub-agents, hooks
+bash tests/hooks_test.sh           # guard allow/deny cases and the quality-gate loop breaker
+python3 scripts/loader_smoke.py    # loads the plugin through the real SDK loader
 ```
 
-A single malformed file silently drops that component from the catalog, so run both before
-committing. CI runs them on every pull request (`.github/workflows/validate.yml`). Start a new
-conversation afterwards for the catalog to rebuild.
+`validate.py` checks the files' shape. `loader_smoke.py` goes further: it calls
+`Plugin.load(".agents")` with the same SDK OpenHands uses and fails if the loader returns fewer
+skills or sub-agents than exist on disk, which is how a well-formed file can still be silently
+dropped from the catalog. Run all three before committing.
+
+CI runs all three on every pull request (`.github/workflows/validate.yml`). The workflow pins
+`actions/checkout` and `actions/setup-python` to a commit SHA, and fails closed if
+`tests/hooks_test.sh` is missing. Start a new conversation afterwards for the catalog to rebuild.
 
 ## Verified loading
 
