@@ -44,14 +44,23 @@ them under `dev.openhands/`. Removing the plugin declaration silently drops 19 a
 ## Hooks
 
 - **`pre_tool_use` → `guard.py`** denies destructive or secret-leaking terminal commands: force-push
-  and push to `main`/`master` (including `HEAD:main` and refspecs), `--no-verify`, `rm -rf` of `/`
-  or `~`, printing secrets (`echo $TOKEN`, bare `printenv`/`env`, `cat /proc/*/environ`, `cat .env*`),
-  and `curl`/`wget` piped into a shell. It parses the hook JSON and splits the command into real
-  argv tokens, so a branch name that merely contains `main` is not a false positive.
+  and push to `main`/`master` (including `HEAD:main`, `+ref` and `--all`/`--mirror`), `--no-verify`
+  (any git subcommand) and `git commit -n`, `rm -rf` of `/`, `~`, `.git` or a top-level system dir,
+  printing a secret variable (`echo $TOKEN` and any `*TOKEN*`/`*SECRET*`/`*PASSWORD*`/`*API_KEY*`
+  name, bare `printenv`/`env`, `printenv <SECRET>`, `cat /proc/*/environ`, `cat .env*`), and
+  `curl`/`wget` piped into a shell or an interpreter. It skips git global options (`-C`, `-c`,
+  `--git-dir`, …), unwraps `bash -c`/`sudo`/`timeout`/`xargs`/`env`/`eval`/`$(…)`/backticks
+  (depth 3), and splits the command into real argv tokens, so a branch name that merely contains
+  `main` is not a false positive.
 - **`stop` → `quality_gate.sh`** refuses to finish while `git diff --check` reports whitespace
   errors (in the worktree *and* in committed changes vs `origin/main`), or while a project
   typecheck fails. A loop breaker allows the stop after 3 consecutive denials and prints a warning,
   so a stuck agent is never trapped.
+
+**What the guard is and is not.** The guard stops honest mistakes. It is not a security boundary:
+it inspects one `terminal` command at a time, and a determined command can get around it (encoding,
+indirection the tokenizer does not model, a tool other than `terminal`). Do not rely on it to
+contain a hostile actor.
 
 ## Registration
 
