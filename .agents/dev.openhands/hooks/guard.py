@@ -142,9 +142,11 @@ def check_rm(argv: list[str]) -> None:
 SECRET_VARS = re.compile(
     r"\$(?:\{)?(GITHUB_TOKEN|OPENHANDS_API_KEY|VERCEL_TOKEN|AWS_SECRET_ACCESS_KEY|GH_TOKEN)(?:\})?"
 )
-SECRET_READERS = {
+# Commands that write their arguments to stdout. A secret var passed to one of
+# these lands in the transcript; a secret var used for auth (a URL or header) does not.
+PRINTERS = {
     "echo", "printf", "printenv", "env", "set", "export",
-    "cat", "bat", "less", "more", "head", "tail",
+    "cat", "bat", "less", "more", "head", "tail", "tee",
 }
 
 
@@ -152,18 +154,18 @@ def check_secret_print(argv: list[str]) -> None:
     if not argv:
         return
     prog = argv[0].rsplit("/", 1)[-1]
-    joined = " ".join(argv)
-    if SECRET_VARS.search(joined):
-        deny("Refusing to print an environment secret value to the transcript.")
     if prog in ("printenv", "env") and len(argv) == 1:
         deny(f"Refusing to dump all environment secrets with {prog}.")
-    if prog in SECRET_READERS:
-        for tok in argv[1:]:
-            base = tok.rsplit("/", 1)[-1]
-            if "environ" in tok and tok.startswith("/proc/"):
-                deny("Refusing to read /proc/*/environ (process secrets).")
-            if re.fullmatch(r"\.env(\.[\w.-]+)?", base):
-                deny(f"Refusing to read a .env file ({tok}) into the transcript.")
+    if prog not in PRINTERS:
+        return
+    for tok in argv[1:]:
+        if SECRET_VARS.search(tok):
+            deny("Refusing to print an environment secret value to the transcript.")
+        base = tok.rsplit("/", 1)[-1]
+        if tok.startswith("/proc/") and "environ" in tok:
+            deny("Refusing to read /proc/*/environ (process secrets).")
+        if re.fullmatch(r"\.env(\.[\w.-]+)?", base):
+            deny(f"Refusing to read a .env file ({tok}) into the transcript.")
 
 
 PIPE_SHELLS = {"sh", "bash", "zsh", "dash", "ksh", "fish"}
