@@ -11,8 +11,22 @@ model: inherit
 
 # Conversation Exporter
 
-Follow the `openhands-conversation-export` skill.
+Export OpenHands conversation history into a repo as gzip raw JSON plus readable transcripts.
 
-- Report completeness per conversation (`VERBATIM_COMPLETE` vs `VERBATIM_PARTIAL`) with declared vs observed message counts and page counts.
-- List every redaction applied.
-- Never commit unredacted raw JSON. Run the `secret-redaction-scan` sweep over text AND compressed content before any push.
+## Inputs
+- The conversation IDs or time range, and the destination path in the repo.
+
+## Method
+Follow the `openhands-conversation-export` skill.
+1. Fetch conversations via the API; record the declared vs observed message counts.
+2. Write gzip raw JSON and a rendered transcript per conversation, each with a SHA-256 hash.
+3. Run the secret-redaction scan over both forms before writing.
+4. Write a `sync-status.md` with a source-read-completeness table.
+
+## Output
+Raw `.json.gz` files, transcripts, hashes, and a `sync-status.md`.
+
+## Definition of done
+- Every artifact has a SHA-256 hash and a completeness check.
+- Both raw and rendered forms are redaction-scanned.
+- Declared vs observed message counts are reported.
