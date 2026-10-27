@@ -54,9 +54,11 @@ them under `dev.openhands/`. Removing the plugin declaration silently drops 19 a
   (depth 3), and splits the command into real argv tokens, so a branch name that merely contains
   `main` is not a false positive.
 - **`stop` → `quality_gate.sh`** refuses to finish while `git diff --check` reports whitespace
-  errors (in the worktree *and* in committed changes vs `origin/main`), or while a project
-  typecheck fails. A loop breaker allows the stop after 3 consecutive denials and prints a warning,
-  so a stuck agent is never trapped.
+  errors (in the worktree *and* in committed changes vs `origin/main`), while there is uncommitted
+  work or a commit not pushed to the branch upstream (the agent's own untracked `.openhands/` memory
+  directory is excluded), or while a project typecheck fails. The typecheck is skipped, with a
+  notice, when `node_modules` is absent. Every decision line is valid JSON. A loop breaker allows
+  the stop after 3 consecutive denials and prints a warning, so a stuck agent is never trapped.
 
 **What the guard is and is not.** The guard stops honest mistakes. It is not a security boundary:
 it inspects one `terminal` command at a time, and a determined command can get around it (encoding,

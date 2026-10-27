@@ -324,6 +324,40 @@ else
 fi
 rm -rf "$up_tmp" "/tmp/openhands_quality_gate_${upkey}"
 
+echo "=== quality_gate.sh: .openhands/ is not treated as uncommitted work ==="
+oh_tmp="$(mktemp -d)"
+git init -q --bare "$oh_tmp/origin.git"
+git clone -q "$oh_tmp/origin.git" "$oh_tmp/w" >/dev/null 2>&1
+(
+  cd "$oh_tmp/w" || exit 1
+  git config user.email t@t.t
+  git config user.name t
+  printf 'x\n' > f.txt
+  git add f.txt
+  git commit -qm init
+  git push -q -u origin HEAD 2>/dev/null || git push -q -u origin master
+  mkdir -p .openhands/memory
+  printf '# memory\n' > .openhands/memory/MEMORY.md   # the agent's own untracked memory
+) >/dev/null 2>&1
+ohkey="$(printf '%s' "$oh_tmp/w" | cksum | cut -d' ' -f1)"
+rm -f "/tmp/openhands_quality_gate_${ohkey}"
+ohout="$( cd "$oh_tmp/w" && OPENHANDS_PROJECT_DIR="$oh_tmp/w" bash "$GATE"; echo "rc=$?" )"
+if printf '%s' "$ohout" | grep -q 'rc=0'; then
+  PASS=$((PASS + 1)); printf 'PASS gate ignores .openhands/ memory dir\n'
+else
+  FAIL=$((FAIL + 1)); printf 'FAIL gate blocked by .openhands/ (%s)\n' "$ohout"
+fi
+# A normal untracked file must still deny.
+( cd "$oh_tmp/w" && printf 'y\n' > real_work.txt ) >/dev/null 2>&1
+rm -f "/tmp/openhands_quality_gate_${ohkey}"
+ohout2="$( cd "$oh_tmp/w" && OPENHANDS_PROJECT_DIR="$oh_tmp/w" bash "$GATE"; echo "rc=$?" )"
+if printf '%s' "$ohout2" | grep -q 'rc=2' && printf '%s' "$ohout2" | grep -q 'uncommitted'; then
+  PASS=$((PASS + 1)); printf 'PASS gate still denies a real untracked file\n'
+else
+  FAIL=$((FAIL + 1)); printf 'FAIL gate missed a real untracked file (%s)\n' "$ohout2"
+fi
+rm -rf "$oh_tmp" "/tmp/openhands_quality_gate_${ohkey}"
+
 echo "=== quality_gate.sh: committed whitespace is caught ==="
 cw_tmp="$(mktemp -d)"
 (
