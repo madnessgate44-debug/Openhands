@@ -42,6 +42,29 @@ them under `dev.openhands/`. Removing the plugin declaration silently drops 19 a
 | Sub-agents | 19 | plugin → `dev.openhands/agents/*.md` |
 | Hooks | 2 | plugin → `dev.openhands/hooks/hooks.json` |
 
+### How a skill activates
+
+The SDK maps each skill's frontmatter to a trigger, in this precedence order (source:
+`openhands/sdk/skills/skill.py`):
+
+1. **`paths:`** → `PathTrigger`. Content is injected when a matching file is touched. If a skill
+   declares both `paths:` and `triggers:`, `paths:` wins and the `triggers:` are ignored with a
+   warning — so do not mix them in one file.
+2. **`triggers:` starting with `/`** → `TaskTrigger` (an explicit slash command).
+3. **other `triggers:`** → `KeywordTrigger`. Content is injected when one of the keywords appears in
+   a user message.
+4. **neither** → `trigger=None` → the legacy **always-active** behaviour: the full content sits in
+   `<REPO_CONTEXT>` on every turn.
+
+All three of the library's path rules (`content-vs-brand`, `docs-evidence-format`,
+`no-schedule-claims`) use `paths:`, so their content injects only when a matching file is touched.
+`validate.py` enforces the "`triggers:` or `paths:`" choice; a legacy `.md` skill with neither would
+load as always-active, which is rarely what is wanted — prefer `paths:` or an `AGENTS.md` entry.
+
+Verified against `openhands-sdk` 1.58.2: `Plugin.load(".agents")` returns `PathTrigger` for the
+three path rules and `KeywordTrigger` for the keyword skills (for example `owner-brief` →
+`['final report', 'status', 'summary', 'handoff', 'brief', 'what happened']`).
+
 ## Hooks
 
 - **`pre_tool_use` → `guard.py`** denies destructive or secret-leaking terminal commands: force-push

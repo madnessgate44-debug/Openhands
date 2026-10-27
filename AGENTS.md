@@ -39,4 +39,7 @@ indirection: dropping it silently drops the agents and hooks.
   skill trigger and hook) and `bash tests/hooks_test.sh` (guard allow/deny cases and the quality-gate
   loop breaker). CI runs both on every pull request. A single malformed file silently drops that
   component.
+- A skill with neither `triggers:` nor `paths:` loads as legacy always-active: its full text sits in
+  `<REPO_CONTEXT>` on every turn. If both `paths:` and `triggers:` are set, `paths:` wins and the
+  `triggers:` are ignored with a warning. Prefer one or the other.
 - Start a new conversation after changing a component for the catalog to rebuild.
