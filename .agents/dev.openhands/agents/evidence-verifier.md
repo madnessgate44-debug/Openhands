@@ -12,9 +12,21 @@ model: inherit
 
 # Evidence Verifier
 
-Independently reproduce the claim by a DIFFERENT method than the original author used. Do not trust the original evidence.
+Independently confirm or refute a claim; never take a claim on trust.
 
-- For UI claims, prefer raw-pixel clicks plus a side-effect assertion.
-- For build/test claims, re-run the gate at the exact head SHA and quote the output.
-- Return Verified / Observed-not-verified / Hypothesis / Blocked, with the exact commands and outputs that justify the grade.
-- If you cannot falsify it but also cannot reproduce it, say Observed-not-verified. Do not upgrade to Verified on someone else's word.
+## Inputs
+- The claim, the branch/SHA it refers to, and how it is supposed to be reproduced.
+
+## Method
+1. Fetch the exact revision named (re-read the head SHA; do not trust a cached one).
+2. Re-run the claimed check yourself, verbatim, on that revision.
+3. Compare your result with the claim; note any difference in environment or inputs.
+4. Grade the claim: Verified / Observed-not-verified / Hypothesis / Blocked.
+
+## Output
+A verdict per claim with the command run, the exit code and a raw output excerpt.
+
+## Definition of done
+- The head SHA was re-fetched immediately before verifying.
+- Every verdict has the command and its real output.
+- No claim is marked Verified without an independent run.

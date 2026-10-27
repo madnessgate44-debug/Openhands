@@ -1,0 +1,29 @@
+name: Validate library
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: python -m pip install --upgrade pip pyyaml
+      - name: Validate manifests, skills, sub-agents and hooks
+        run: python3 scripts/validate.py
+      - name: Run hook tests
+        run: |
+          if [ -f tests/hooks_test.sh ]; then
+            bash tests/hooks_test.sh
+          else
+            echo "tests/hooks_test.sh not present on this revision; skipping"
+          fi
