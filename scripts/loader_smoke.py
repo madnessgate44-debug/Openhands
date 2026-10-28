@@ -91,7 +91,7 @@ def main() -> int:
         for matcher in matchers:
             for hook in matcher.get("hooks", []):
                 hook_count += 1
-                for name in ("guard.py", "quality_gate.sh"):
+                for name in ("guard.py", "quality_gate.sh", "backlog_gate.sh"):
                     if name in hook.get("command", "") and not (AGENTS / "dev.openhands" / "hooks" / name).exists():
                         fail(f"hook command references missing script {name}")
     if hook_count == 0:

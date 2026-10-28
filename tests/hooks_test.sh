@@ -11,6 +11,7 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$HERE/.." && pwd)"
 GUARD="$ROOT/.agents/dev.openhands/hooks/guard.py"
 GATE="$ROOT/.agents/dev.openhands/hooks/quality_gate.sh"
+BLOGGATE="$ROOT/.agents/dev.openhands/hooks/backlog_gate.sh"
 
 PASS=0
 FAIL=0
@@ -404,6 +405,109 @@ else
   FAIL=$((FAIL + 1)); printf 'FAIL gate worktree not enforced (%s)\n' "$wtout"
 fi
 rm -rf "$wt_tmp" "/tmp/openhands_quality_gate_${wtkey}"
+
+# ------------------------------------------------------------------------- #
+# backlog_gate.sh (Stop hook): continue the loop while work remains.
+# ------------------------------------------------------------------------- #
+echo "=== backlog_gate.sh: decisions ==="
+
+# Each case gets its own project dir so the per-project counter is isolated.
+bg_case() {
+  # $1 = label, $2 = expected (deny|allow), $3 = STATUS content,
+  # $4 = BACKLOG content, $5 = optional curl stub path
+  local label="$1" expect="$2" status="$3" backlog="$4" stub="${5:-}"
+  local d out rc
+  d="$(mktemp -d)"
+  mkdir -p "$d/docs"
+  printf '%s' "$status" > "$d/docs/STATUS.md"
+  printf '%s' "$backlog" > "$d/docs/BACKLOG.md"
+  local key; key="$(printf '%s' "$d" | cksum | cut -d' ' -f1)"
+  rm -f "/tmp/openhands_backlog_gate_${key}"
+  if [ -n "$stub" ]; then
+    out="$( cd "$d" && OPENHANDS_PROJECT_DIR="$d" BACKLOG_GATE_CURL="$stub" \
+      CLAUDE_INBOX_ID="test-id" CLAUDE_INBOX_TOKEN="test-token" bash "$BLOGGATE"; echo "rc=$?" )"
+  else
+    out="$( cd "$d" && OPENHANDS_PROJECT_DIR="$d" bash "$BLOGGATE"; echo "rc=$?" )"
+  fi
+  rc="$(printf '%s' "$out" | sed -n 's/.*rc=\([0-9]*\).*/\1/p')"
+  local got="deny"; [ "$rc" = "0" ] && got="allow"
+  if [ "$got" = "$expect" ]; then
+    PASS=$((PASS + 1)); printf 'PASS bloggate %-5s: %s\n' "$got" "$label"
+  else
+    FAIL=$((FAIL + 1)); printf 'FAIL bloggate %s: %s (expected %s, rc=%s out=%s)\n' "$expect" "$label" "$expect" "$rc" "$out"
+  fi
+  rm -rf "$d" "/tmp/openhands_backlog_gate_${key}"
+}
+
+BG_READY='- [ ] BL-9 | do the thing | tests pass | risk=low | status=ready
+'
+BG_DONE='- [x] BL-9 | already done | tests pass | risk=low | status=done
+'
+BG_EMPTY=''
+ST_NONE='BLOCKER: none
+last_seq: 0
+'
+ST_BLOCKED='BLOCKER: waiting on owner
+last_seq: 0
+'
+
+bg_case "ready item denies"      deny  "$ST_NONE"   "$BG_READY"
+bg_case "empty backlog allows"   allow "$ST_NONE"   "$BG_EMPTY"
+bg_case "only done items allows" allow "$ST_NONE"   "$BG_DONE"
+bg_case "blocker allows"         allow "$ST_BLOCKED" "$BG_READY"
+
+# Continuation cap: a fresh counter already past MAX_CONTINUATIONS allows.
+cap_dir="$(mktemp -d)"; mkdir -p "$cap_dir/docs"
+printf '%s' "$ST_NONE" > "$cap_dir/docs/STATUS.md"
+printf '%s' "$BG_READY" > "$cap_dir/docs/BACKLOG.md"
+cap_key="$(printf '%s' "$cap_dir" | cksum | cut -d' ' -f1)"
+printf '6' > "/tmp/openhands_backlog_gate_${cap_key}"
+capout="$( cd "$cap_dir" && OPENHANDS_PROJECT_DIR="$cap_dir" bash "$BLOGGATE"; echo "rc=$?" )"
+if printf '%s' "$capout" | grep -q 'rc=0' && printf '%s' "$capout" | grep -qi 'BYPASSED'; then
+  PASS=$((PASS + 1)); printf 'PASS bloggate cap allows after 6\n'
+else
+  FAIL=$((FAIL + 1)); printf 'FAIL bloggate cap (%s)\n' "$capout"
+fi
+rm -rf "$cap_dir" "/tmp/openhands_backlog_gate_${cap_key}"
+
+# A stale counter must not bypass (expires after 1 hour).
+st_dir="$(mktemp -d)"; mkdir -p "$st_dir/docs"
+printf '%s' "$ST_NONE" > "$st_dir/docs/STATUS.md"
+printf '%s' "$BG_READY" > "$st_dir/docs/BACKLOG.md"
+st_key="$(printf '%s' "$st_dir" | cksum | cut -d' ' -f1)"
+printf '6' > "/tmp/openhands_backlog_gate_${st_key}"
+touch -d '2 hours ago' "/tmp/openhands_backlog_gate_${st_key}" 2>/dev/null || touch -t 202001010000 "/tmp/openhands_backlog_gate_${st_key}"
+stout="$( cd "$st_dir" && OPENHANDS_PROJECT_DIR="$st_dir" bash "$BLOGGATE"; echo "rc=$?" )"
+if printf '%s' "$stout" | grep -q 'rc=2'; then
+  PASS=$((PASS + 1)); printf 'PASS bloggate stale counter expired (denied)\n'
+else
+  FAIL=$((FAIL + 1)); printf 'FAIL bloggate stale counter (%s)\n' "$stout"
+fi
+rm -rf "$st_dir" "/tmp/openhands_backlog_gate_${st_key}"
+
+# Fake inbox: a local stub standing in for curl.
+stub_ok="$(mktemp)"
+cat > "$stub_ok" <<'STUB'
+#!/bin/bash
+printf '%s' '{"seq": 2, "type": "task", "body": "please add a widget"}'
+STUB
+chmod +x "$stub_ok"
+bg_case "newer inbox seq denies"  deny  "$ST_NONE" "$BG_EMPTY" "$stub_ok"
+
+# Same message, already acked: allow.
+stub_acked="$(mktemp)"
+cat > "$stub_acked" <<'STUB'
+#!/bin/bash
+printf '%s' '{"seq": 2, "type": "task", "body": "please add a widget"}'
+STUB
+chmod +x "$stub_acked"
+bg_case "acked inbox seq allows"  allow "$(printf 'BLOCKER: none\nlast_seq: 2\n')" "$BG_EMPTY" "$stub_acked"
+
+# Unreachable inbox (stub exits non-zero): allow.
+stub_fail="$(mktemp)"
+printf '#!/bin/bash\nexit 7\n' > "$stub_fail"; chmod +x "$stub_fail"
+bg_case "unreachable inbox allows" allow "$ST_NONE" "$BG_EMPTY" "$stub_fail"
+rm -f "$stub_ok" "$stub_acked" "$stub_fail"
 
 echo
 echo "-----------------------------------"
