@@ -248,6 +248,72 @@ bcheck_allow "bare push on feature branch"  "git push"
 bcheck_allow "push HEAD on feature branch"  "git push origin HEAD"
 rm -rf "$b_tmp"
 
+echo "=== guard.py: heredoc bodies (round 4) ==="
+# A heredoc body is data for cat/tee/python/node, so it must be ignored even if it
+# contains a dangerous command or a secret variable name.
+expect_allow "heredoc cat body has --no-verify" "cat > /tmp/f <<'EOF'
+git push --no-verify
+EOF"
+expect_allow "heredoc cat body names a secret var" "cat > /tmp/f <<'EOF'
+Bearer \$GITHUB_TOKEN
+EOF"
+expect_allow "heredoc cat body force push (data)" "cat > /tmp/f <<'EOF'
+git push --force origin main
+EOF"
+expect_allow "heredoc python3 - plain code" "python3 - <<EOF
+print(1)
+EOF"
+expect_allow "heredoc cat piped to python" "cat <<'EOF' | python3
+git push --force origin main
+EOF"
+# A heredoc body is code for a shell (or source/eval), so it must be checked.
+expect_deny  "heredoc bash body force push" "bash <<'EOF'
+git push --force origin main
+EOF"
+expect_deny  "heredoc sh body rm -rf /" "sh <<EOF
+rm -rf /
+EOF"
+expect_deny  "heredoc bash body no-verify" "bash <<'EOF'
+git push --no-verify
+EOF"
+expect_deny  "heredoc cat piped to bash" "cat <<'EOF' | bash
+git push --force origin main
+EOF"
+expect_deny  "heredoc eval body force push" "eval <<'EOF'
+git push --force origin main
+EOF"
+# The command after the terminator is a normal command and must be checked.
+expect_deny  "dangerous cmd after terminator" "cat > /tmp/f <<'EOF'
+hello
+EOF
+git push --force origin main"
+# A herestring is a one-line argument, never a heredoc body.
+expect_allow "herestring to cat is data" "cat <<< 'git push --force origin main'"
+expect_deny  "herestring to shell is code" "bash <<< 'git push --force origin main'"
+# An unterminated heredoc consumes the rest of the command (fail open on the body,
+# but a shell consumer still has its body checked).
+expect_deny  "unterminated heredoc to bash" "bash <<'EOF'
+git push --force origin main"
+expect_allow "unterminated heredoc to cat" "cat > /tmp/f <<'EOF'
+git push --force origin main"
+# <<- strips leading tabs when matching the terminator.
+tab=$'\t'
+expect_deny  "heredoc <<- tabs to bash" "bash <<-EOF
+${tab}git push --force origin main
+${tab}EOF"
+expect_allow "heredoc <<- tabs to cat" "cat > /tmp/f <<-EOF
+${tab}git push --force origin main
+${tab}EOF"
+# A heredoc inside a larger chain.
+expect_deny  "heredoc after && in a chain" "true && bash <<'EOF'
+git push --force origin main
+EOF"
+expect_allow "heredoc cat, later git push feature" "cat > /tmp/f <<'EOF'
+text
+EOF
+git push origin feature/x"
+
+
 echo "=== quality_gate.sh: loop breaker ==="
 tmpdir="$(mktemp -d)"
 (

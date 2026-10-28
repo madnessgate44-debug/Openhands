@@ -442,6 +442,127 @@ PROC_SUB = re.compile(
 SUBST_DOLLAR = re.compile(r"\$\(([^()]*)\)")
 SUBST_TICK = re.compile(r"`([^`]*)`")
 
+# A heredoc body is code only when a shell (or source/eval) consumes it. For every
+# other consumer (cat, tee, python, node, ...) the body is data and is ignored.
+HEREDOC_CONSUMERS = WRAP_SHELLS | {"source", "eval"}
+
+
+def _segment_program(seg: list[str]) -> str:
+    """The real program of a simple command, past wrapper prefixes and env assigns."""
+    i = 0
+    while i < len(seg):
+        tok = seg[i]
+        p = prog_of(tok)
+        if p in ("sudo", "timeout", "xargs"):
+            i += 1
+            i += skip_wrapper_opts(p, seg[i:])
+            if p == "timeout" and i < len(seg):
+                i += 1
+            continue
+        if re.match(r"[A-Za-z_][A-Za-z0-9_]*=", tok):
+            i += 1
+            continue
+        if p in WRAP_PREFIX:
+            i += 1
+            continue
+        return p
+    return ""
+
+
+def _heredoc_specs(line: str) -> list[tuple[str, bool]]:
+    """(delimiter, strip_tabs) for each ``<<``/``<<-`` on a header line.
+
+    ``<<<`` is a herestring, not a heredoc, so it never matches. Quotes around the
+    delimiter are already removed by the tokenizer.
+    """
+    toks = tokens(line)
+    specs: list[tuple[str, bool]] = []
+    k = 0
+    while k < len(toks):
+        if toks[k] == "<<":
+            strip_tabs = False
+            k += 1
+            d: str | None = None
+            if k < len(toks):
+                if toks[k] == "-":
+                    strip_tabs = True
+                    k += 1
+                    d = toks[k] if k < len(toks) else None
+                elif toks[k].startswith("-") and len(toks[k]) > 1:
+                    strip_tabs = True
+                    d = toks[k][1:]
+                else:
+                    d = toks[k]
+            if d is not None:
+                specs.append((d.strip('"').strip("'"), strip_tabs))
+            k += 1
+        else:
+            k += 1
+    return specs
+
+
+def _heredoc_consumer(line: str) -> str:
+    """The program that reads the heredoc declared on this header line.
+
+    Usually the program of the segment that carries the ``<<``. One extra case: when
+    that segment is piped into a shell (``cat <<EOF | bash``), the body reaches the
+    shell through the pipe, so the shell is the consumer.
+    """
+    segs = segments(tokens(line))
+    for idx, seg in enumerate(segs):
+        if "<<" in seg:
+            prog = _segment_program(seg)
+            if prog in HEREDOC_CONSUMERS:
+                return prog
+            if idx + 1 < len(segs) and _segment_program(segs[idx + 1]) in WRAP_SHELLS:
+                return _segment_program(segs[idx + 1])
+            return prog
+    return ""
+
+
+def extract_heredocs(command: str) -> tuple[str, list[tuple[str, str]]]:
+    """Strip heredoc bodies from a command.
+
+    Returns the command with each body (and its terminator) removed, plus a list of
+    ``(consumer_program, body)``. An unterminated heredoc takes the rest of the
+    command as its body. ``<<-`` strips leading tabs when matching the terminator.
+    """
+    lines = command.split("\n")
+    kept: list[str] = []
+    bodies: list[tuple[str, str]] = []
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        specs = _heredoc_specs(line)
+        kept.append(line)
+        i += 1
+        if not specs:
+            continue
+        consumer = _heredoc_consumer(line)
+        for delim, strip_tabs in specs:
+            body: list[str] = []
+            while i < len(lines):
+                cand = lines[i].lstrip("\t") if strip_tabs else lines[i]
+                if cand == delim:
+                    break
+                body.append(lines[i])
+                i += 1
+            if i < len(lines):
+                i += 1  # drop the terminator line
+            bodies.append((consumer, "\n".join(body)))
+    return "\n".join(kept), bodies
+
+
+def _herestring_code(seg: list[str]) -> list[str]:
+    """Here-string operands of a shell consumer, which are executed as code."""
+    if not seg or _segment_program(seg) not in HEREDOC_CONSUMERS:
+        return []
+    out: list[str] = []
+    for k, tok in enumerate(seg):
+        if tok == "<<<" and k + 1 < len(seg):
+            out.append(seg[k + 1])
+    return out
+
 
 def check_all(command: str, depth: int = 0) -> None:
     if depth > MAX_DEPTH:
@@ -449,22 +570,32 @@ def check_all(command: str, depth: int = 0) -> None:
     command = command.strip()
     if not command:
         return
-    argv = tokens(command)
-    for seg in segments(argv):
-        if not seg:
+    command, bodies = extract_heredocs(command)
+    # A newline separates commands; a trailing backslash continues the line.
+    for line in re.sub(r"\\\n", " ", command).split("\n"):
+        if not line.strip():
             continue
-        check_git(seg)
-        check_rm(seg)
-        check_secret_print(seg)
-        for inner in unwrap(seg):
-            check_all(inner, depth + 1)
-    check_pipe(argv)
+        argv = tokens(line)
+        for seg in segments(argv):
+            if not seg:
+                continue
+            check_git(seg)
+            check_rm(seg)
+            check_secret_print(seg)
+            for inner in unwrap(seg):
+                check_all(inner, depth + 1)
+            for inner in _herestring_code(seg):
+                check_all(inner, depth + 1)
+        check_pipe(argv)
     for m in SUBST_DOLLAR.finditer(command):
         check_all(m.group(1), depth + 1)
     for m in SUBST_TICK.finditer(command):
         check_all(m.group(1), depth + 1)
     if PROC_SUB.search(command):
         deny("Refusing to run a downloaded script via process substitution (<(...)).")
+    for consumer, body in bodies:
+        if consumer in HEREDOC_CONSUMERS:
+            check_all(body, depth + 1)
 
 
 def main() -> int:
