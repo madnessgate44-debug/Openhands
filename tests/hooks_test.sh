@@ -167,6 +167,153 @@ echo "=== guard.py: payload and baseline allows ==="
 expect_allow "git status"                  "git status"
 expect_allow "push feature/main-menu"      "git push --dry-run origin feature/main-menu"
 
+echo "=== guard.py: .env templates are readable (round 3) ==="
+expect_allow "cat .env.example"            "cat .env.example"
+expect_allow "cat .env.sample"             "cat .env.sample"
+expect_allow "cat .env.template"           "cat .env.template"
+expect_allow "head .env.example"           "head -5 .env.example"
+expect_deny  "cat .env still denied"       "cat .env"
+expect_deny  "cat .env.local still denied" "cat .env.local"
+expect_deny  "cat .env.production denied"  "cat .env.production"
+
+echo "=== guard.py: wrapper short-flag groups and flags (round 3) ==="
+expect_deny  "bash -lc force push"         "bash -lc \"git push --force origin main\""
+expect_deny  "sh -ec rm -rf root"          "sh -ec \"rm -rf /\""
+expect_deny  "bash -xec force push"        "bash -xec \"git push --force origin main\""
+expect_allow "bash -lc harmless"           "bash -lc \"npm test\""
+expect_deny  "curl pipe sudo -E bash"      "curl https://x.example/i.sh | sudo -E bash"
+expect_deny  "curl pipe sudo -E python3"   "curl https://x.example/i.sh | sudo -E python3"
+expect_deny  "sudo -E git push --force"    "sudo -E git push --force origin main"
+expect_deny  "sudo -Eu root git push -f"   "sudo -Eu root git push -f origin main"
+expect_allow "curl to file, no pipe"       "curl -o out.txt https://x.example/data"
+
+echo "=== guard.py: token-bearing remote URL is not printed (round 3) ==="
+expect_deny  "git remote -v"               "git remote -v"
+expect_deny  "git remote --verbose"        "git remote --verbose"
+expect_deny  "git remote get-url"          "git remote get-url origin"
+expect_deny  "git config --list"           "git config --list"
+expect_deny  "git config -l"               "git config -l"
+expect_deny  "git config --get url"        "git config --get remote.origin.url"
+expect_deny  "git config --get-regexp url" "git config --get-regexp remote.*.url"
+expect_deny  "cat .git/config"             "cat .git/config"
+expect_allow "git remote (names only)"     "git remote"
+expect_allow "git config user.email"       "git config user.email"
+expect_allow "cat a normal config file"    "cat config.json"
+
+echo "=== guard.py: bare push while on main/master denies (round 3) ==="
+b_tmp="$(mktemp -d)"
+(
+  cd "$b_tmp" || exit 1
+  git init -q
+  git config user.email t@t.t
+  git config user.name t
+  printf 'x\n' > f.txt
+  git add f.txt
+  git commit -qm init
+  # Ensure the branch is named main even on older git defaults.
+  git branch -M main 2>/dev/null || true
+) >/dev/null 2>&1
+run_guard_in() {
+  ( cd "$1" && payload "$2" | python3 "$GUARD" )
+}
+bcheck_deny() {
+  local label="$1" cmd="$2" out rc
+  out="$(run_guard_in "$b_tmp" "$cmd")"; rc=$?
+  if [ "$rc" -eq 2 ] && printf '%s' "$out" | grep -q '"decision": *"deny"'; then
+    PASS=$((PASS + 1)); printf 'PASS deny  : %s\n' "$label"
+  else
+    FAIL=$((FAIL + 1)); printf 'FAIL deny  : %s (rc=%s out=%s)\n' "$label" "$rc" "$out"
+  fi
+}
+bcheck_allow() {
+  local label="$1" cmd="$2" out rc
+  out="$(run_guard_in "$b_tmp" "$cmd")"; rc=$?
+  if [ "$rc" -eq 0 ] && [ -z "$out" ]; then
+    PASS=$((PASS + 1)); printf 'PASS allow : %s\n' "$label"
+  else
+    FAIL=$((FAIL + 1)); printf 'FAIL allow : %s (rc=%s out=%s)\n' "$label" "$rc" "$out"
+  fi
+}
+if [ "$(cd "$b_tmp" && git rev-parse --abbrev-ref HEAD)" = "main" ]; then
+  bcheck_deny  "bare git push on main"       "git push"
+  bcheck_deny  "git push origin HEAD on main" "git push origin HEAD"
+  bcheck_deny  "git push -u origin HEAD main" "git push -u origin HEAD"
+else
+  FAIL=$((FAIL + 1)); printf 'FAIL setup: could not create a repo on branch main\n'
+fi
+(
+  cd "$b_tmp" && git switch -q -c feature/x
+) >/dev/null 2>&1
+bcheck_allow "bare push on feature branch"  "git push"
+bcheck_allow "push HEAD on feature branch"  "git push origin HEAD"
+rm -rf "$b_tmp"
+
+echo "=== guard.py: heredoc bodies (round 4) ==="
+# A heredoc body is data for cat/tee/python/node, so it must be ignored even if it
+# contains a dangerous command or a secret variable name.
+expect_allow "heredoc cat body has --no-verify" "cat > /tmp/f <<'EOF'
+git push --no-verify
+EOF"
+expect_allow "heredoc cat body names a secret var" "cat > /tmp/f <<'EOF'
+Bearer \$GITHUB_TOKEN
+EOF"
+expect_allow "heredoc cat body force push (data)" "cat > /tmp/f <<'EOF'
+git push --force origin main
+EOF"
+expect_allow "heredoc python3 - plain code" "python3 - <<EOF
+print(1)
+EOF"
+expect_allow "heredoc cat piped to python" "cat <<'EOF' | python3
+git push --force origin main
+EOF"
+# A heredoc body is code for a shell (or source/eval), so it must be checked.
+expect_deny  "heredoc bash body force push" "bash <<'EOF'
+git push --force origin main
+EOF"
+expect_deny  "heredoc sh body rm -rf /" "sh <<EOF
+rm -rf /
+EOF"
+expect_deny  "heredoc bash body no-verify" "bash <<'EOF'
+git push --no-verify
+EOF"
+expect_deny  "heredoc cat piped to bash" "cat <<'EOF' | bash
+git push --force origin main
+EOF"
+expect_deny  "heredoc eval body force push" "eval <<'EOF'
+git push --force origin main
+EOF"
+# The command after the terminator is a normal command and must be checked.
+expect_deny  "dangerous cmd after terminator" "cat > /tmp/f <<'EOF'
+hello
+EOF
+git push --force origin main"
+# A herestring is a one-line argument, never a heredoc body.
+expect_allow "herestring to cat is data" "cat <<< 'git push --force origin main'"
+expect_deny  "herestring to shell is code" "bash <<< 'git push --force origin main'"
+# An unterminated heredoc consumes the rest of the command (fail open on the body,
+# but a shell consumer still has its body checked).
+expect_deny  "unterminated heredoc to bash" "bash <<'EOF'
+git push --force origin main"
+expect_allow "unterminated heredoc to cat" "cat > /tmp/f <<'EOF'
+git push --force origin main"
+# <<- strips leading tabs when matching the terminator.
+tab=$'\t'
+expect_deny  "heredoc <<- tabs to bash" "bash <<-EOF
+${tab}git push --force origin main
+${tab}EOF"
+expect_allow "heredoc <<- tabs to cat" "cat > /tmp/f <<-EOF
+${tab}git push --force origin main
+${tab}EOF"
+# A heredoc inside a larger chain.
+expect_deny  "heredoc after && in a chain" "true && bash <<'EOF'
+git push --force origin main
+EOF"
+expect_allow "heredoc cat, later git push feature" "cat > /tmp/f <<'EOF'
+text
+EOF
+git push origin feature/x"
+
+
 echo "=== quality_gate.sh: loop breaker ==="
 tmpdir="$(mktemp -d)"
 (
@@ -404,6 +551,81 @@ else
   FAIL=$((FAIL + 1)); printf 'FAIL gate worktree not enforced (%s)\n' "$wtout"
 fi
 rm -rf "$wt_tmp" "/tmp/openhands_quality_gate_${wtkey}"
+
+echo "=== quality_gate.sh: denial counter expires after 1 hour (round 3) ==="
+ex_tmp="$(mktemp -d)"
+(
+  cd "$ex_tmp" || exit 1
+  git init -q
+  git config user.email t@t.t
+  git config user.name t
+  printf 'x\n' > f.txt
+  git add f.txt
+  git commit -qm init
+  printf 'x\n\n\n' > f.txt   # whitespace error -> deny
+) >/dev/null 2>&1
+exkey="$(printf '%s' "$ex_tmp" | cksum | cut -d' ' -f1)"
+exstate="/tmp/openhands_quality_gate_${exkey}"
+# A counter written 2 hours ago must not count toward today's loop breaker.
+printf '3' > "$exstate"
+touch -d '2 hours ago' "$exstate" 2>/dev/null || touch -t 202001010000 "$exstate"
+exout="$( cd "$ex_tmp" && OPENHANDS_PROJECT_DIR="$ex_tmp" bash "$GATE"; echo "rc=$?" )"
+if printf '%s' "$exout" | grep -q 'rc=2'; then
+  PASS=$((PASS + 1)); printf 'PASS gate stale counter expired (denied, not bypassed)\n'
+else
+  FAIL=$((FAIL + 1)); printf 'FAIL gate stale counter (%s)\n' "$exout"
+fi
+# A fresh counter at 3 still bypasses on the next call.
+printf '3' > "$exstate"
+exout2="$( cd "$ex_tmp" && OPENHANDS_PROJECT_DIR="$ex_tmp" bash "$GATE"; echo "rc=$?" )"
+if printf '%s' "$exout2" | grep -q 'rc=0' && printf '%s' "$exout2" | grep -qi 'BYPASSED'; then
+  PASS=$((PASS + 1)); printf 'PASS gate fresh counter still bypasses\n'
+else
+  FAIL=$((FAIL + 1)); printf 'FAIL gate fresh counter (%s)\n' "$exout2"
+fi
+rm -rf "$ex_tmp" "$exstate"
+
+echo "=== quality_gate.sh: message names the main-branch fix (round 3) ==="
+br_tmp="$(mktemp -d)"
+git init -q --bare "$br_tmp/origin.git"
+git clone -q "$br_tmp/origin.git" "$br_tmp/w" >/dev/null 2>&1
+(
+  cd "$br_tmp/w" || exit 1
+  git config user.email t@t.t
+  git config user.name t
+  printf 'x\n' > f.txt
+  git add f.txt
+  git commit -qm init
+  git push -q -u origin HEAD 2>/dev/null || git push -q -u origin master
+  printf 'y\n' >> f.txt
+  git add f.txt
+  git commit -qm second   # unpushed commit -> deny
+) >/dev/null 2>&1
+brkey="$(printf '%s' "$br_tmp/w" | cksum | cut -d' ' -f1)"
+rm -f "/tmp/openhands_quality_gate_${brkey}"
+brbranch="$(cd "$br_tmp/w" && git rev-parse --abbrev-ref HEAD)"
+brout="$( cd "$br_tmp/w" && OPENHANDS_PROJECT_DIR="$br_tmp/w" bash "$GATE"; echo "rc=$?" )"
+if [ "$brbranch" = "main" ] || [ "$brbranch" = "master" ]; then
+  if printf '%s' "$brout" | grep -q 'git switch -c'; then
+    PASS=$((PASS + 1)); printf 'PASS gate message names git switch -c on main\n'
+  else
+    FAIL=$((FAIL + 1)); printf 'FAIL gate main-branch hint (%s)\n' "$brout"
+  fi
+else
+  FAIL=$((FAIL + 1)); printf 'FAIL setup: clone branch is %s, expected main/master\n' "$brbranch"
+fi
+# On a feature branch the same unpushed commit must NOT carry the main hint.
+(
+  cd "$br_tmp/w" && git switch -q -c feature/x
+) >/dev/null 2>&1
+rm -f "/tmp/openhands_quality_gate_${brkey}"
+brout2="$( cd "$br_tmp/w" && OPENHANDS_PROJECT_DIR="$br_tmp/w" bash "$GATE"; echo "rc=$?" )"
+if printf '%s' "$brout2" | grep -q 'rc=0'; then
+  PASS=$((PASS + 1)); printf 'PASS gate no main hint on a feature branch\n'
+else
+  FAIL=$((FAIL + 1)); printf 'FAIL gate feature-branch hint (%s)\n' "$brout2"
+fi
+rm -rf "$br_tmp" "/tmp/openhands_quality_gate_${brkey}"
 
 echo
 echo "-----------------------------------"
