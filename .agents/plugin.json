@@ -2,7 +2,7 @@
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "account-library",
   "version": "1.0.0",
-  "description": "Account-level OpenHands library: 31 skills, 19 sub-agents and 2 lifecycle hooks.",
+  "description": "Account-level OpenHands library: 32 skills, 19 sub-agents and 2 lifecycle hooks.",
   "author": {
     "name": "madnessgate44-debug"
   },

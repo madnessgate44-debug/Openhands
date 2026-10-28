@@ -74,16 +74,23 @@ def main() -> int:
         fail("loader returned no hooks")
 
     # Every skill must map to a real trigger. A skill with trigger=None is
-    # "always active" (its full text sits in <REPO_CONTEXT> on every turn), which
-    # is almost never intended for this library. The three path rules must come
-    # back as PathTrigger, not silently as None.
+    # "always active" (its full text sits in <REPO_CONTEXT> on every turn).
+    # Exactly one skill is allowed to be trigger-less on purpose: `owner-policy`.
+    # Any other trigger-less skill is almost certainly a mistake.
+    always_active = "owner-policy"
+    seen_always_active = False
     for skill in plugin.skills:
         trigger = getattr(skill, "trigger", None)
         if trigger is None:
-            fail(f"skill {skill.name} has no trigger (would load always-active)")
+            if skill.name == always_active:
+                seen_always_active = True
+            else:
+                fail(f"skill {skill.name} has no trigger (would load always-active)")
         elif skill.name in ("content-vs-brand", "docs-evidence-format", "no-schedule-claims"):
             if type(trigger).__name__ != "PathTrigger":
                 fail(f"path rule {skill.name} loaded as {type(trigger).__name__}, expected PathTrigger")
+    if not seen_always_active:
+        fail(f"the {always_active} skill did not load as always-active (trigger=None)")
 
     hooks = json.loads(HOOKS_JSON.read_text())
     hook_count = 0
