@@ -168,6 +168,57 @@ echo "=== guard.py: payload and baseline allows ==="
 expect_allow "git status"                  "git status"
 expect_allow "push feature/main-menu"      "git push --dry-run origin feature/main-menu"
 
+echo "=== guard.py: heredoc bodies ==="
+# A heredoc body that only writes text must not be scanned as arguments.
+expect_allow "cat body names --no-verify"  'cat > f.txt <<EOF
+this text mentions git push --no-verify
+EOF'
+expect_allow "tee body names a secret var" 'tee f.txt <<EOF
+echo $GITHUB_TOKEN
+EOF'
+expect_allow "python body names a secret"  'python3 - <<EOF
+print("$AWS_SECRET_ACCESS_KEY")
+EOF'
+expect_allow "cat body names .env"         'cat > f.txt <<EOF
+cat .env
+EOF'
+expect_allow "quoted delimiter is data"    "cat <<'EOF'
+git push --force origin main
+EOF"
+expect_allow "tab-stripped body is data"   'cat <<-EOF
+	rm -rf /
+	EOF'
+expect_allow "herestring is an argument"   'cat <<< "git push --force origin main"'
+expect_allow "unterminated heredoc fails open" 'cat > f.txt <<EOF
+git push --force origin main'
+# When the consumer is a shell, the body IS code and must be checked.
+expect_deny  "bash body force push"        'bash <<EOF
+git push --force origin main
+EOF'
+expect_deny  "sh body rm -rf root"         'sh <<EOF
+rm -rf /
+EOF'
+expect_deny  "bash body no-verify"         'bash <<EOF
+git push --no-verify origin feature/x
+EOF'
+expect_deny  "source body force push"      'source /dev/stdin <<EOF
+git push --force origin main
+EOF'
+expect_deny  "bash body with quoted delim" "bash <<'EOF'
+git push --force origin main
+EOF"
+expect_deny  "bash body with tab delim"    'bash <<-EOF
+	git push --force origin main
+	EOF'
+# Text after the terminator is a new command and is still checked.
+expect_deny  "command after terminator"    'cat > f.txt <<EOF
+safe text
+EOF
+git push --force origin main'
+expect_deny  "danger before heredoc"       'git push --force origin main; cat <<EOF
+safe text
+EOF'
+
 echo "=== quality_gate.sh: loop breaker ==="
 tmpdir="$(mktemp -d)"
 (

@@ -338,6 +338,126 @@ def unwrap(seg: list[str]) -> list[str]:
     return []
 
 
+# --------------------------------------------------------------------------- #
+# heredocs
+# --------------------------------------------------------------------------- #
+
+SHELL_BODY_CONSUMERS = {"sh", "bash", "zsh", "dash", "ksh", "fish", "source", "eval"}
+
+
+def heredoc_ops(line: str) -> list[tuple[int, int, bool, str]]:
+    """Return (start, end, strip_tabs, delimiter) for each ``<<`` / ``<<-`` on a line.
+
+    ``<<<`` is a herestring (a one-line argument), not a heredoc, and is skipped,
+    as is a ``<<`` that is itself preceded by ``<``. A quoted or backslash-escaped
+    delimiter is unwrapped to the bare word that terminates the body.
+    """
+    ops: list[tuple[int, int, bool, str]] = []
+    i, n = 0, len(line)
+    while i < n:
+        c = line[i]
+        if c in ("'", '"'):
+            i += 1
+            while i < n and line[i] != c:
+                i += 1
+            i += 1
+            continue
+        if (
+            line.startswith("<<", i)
+            and not line.startswith("<<<", i)
+            and (i == 0 or line[i - 1] != "<")
+        ):
+            j = i + 2
+            strip_tabs = j < n and line[j] == "-"
+            if strip_tabs:
+                j += 1
+            while j < n and line[j] in " \t":
+                j += 1
+            if j >= n:
+                break
+            if line[j] in ("'", '"'):
+                q = line[j]
+                k = j + 1
+                while k < n and line[k] != q:
+                    k += 1
+                delim = line[j + 1:k]
+                end = k + 1 if k < n else k
+            elif line[j] == "\\":
+                delim = line[j + 1] if j + 1 < n else ""
+                end = j + 2
+            else:
+                k = j
+                while k < n and (line[k].isalnum() or line[k] == "_"):
+                    k += 1
+                delim = line[j:k]
+                end = k
+            if delim:
+                ops.append((i, end, strip_tabs, delim))
+            i = max(end, i + 1)
+            continue
+        i += 1
+    return ops
+
+
+def consumer_is_shell(line: str, ops: list[tuple[int, int, bool, str]]) -> bool:
+    """True when a shell runs the heredoc body, so the body is code, not data."""
+    prefix = line[: ops[0][0]] if ops else line
+    return any(prog_of(tok) in SHELL_BODY_CONSUMERS for tok in tokens(prefix))
+
+
+def fold_continuations(lines: list[str], i: int) -> tuple[str, int]:
+    """Join physical lines ending in an odd backslash into one logical line.
+
+    A ``\\`` at end of line is a line continuation, not a command separator, so
+    the lines must not be split apart by the newline handling below.
+    """
+    current = lines[i]
+    while current.endswith("\\") and (len(current) - len(current.rstrip("\\"))) % 2 == 1:
+        current = current[:-1]
+        i += 1
+        if i >= len(lines):
+            break
+        current = current + " " + lines[i].lstrip()
+    return current, i
+
+
+def strip_heredocs(command: str) -> str:
+    """Drop heredoc bodies that are data and keep the ones a shell will execute.
+
+    A body is text when the consuming command is not a shell (``cat``, ``tee``,
+    ``python``...): its lines are removed so they are not scanned as arguments.
+    When the consumer is a shell or ``source``/``eval`` the body is code and its
+    lines are kept, so the normal checks still see them. An unterminated heredoc
+    fails open: the remaining lines are treated as body text. Newlines become
+    ``;`` so a command written after the terminator is checked as its own segment.
+    """
+    lines = command.split("\n")
+    out: list[str] = []
+    i = 0
+    while i < len(lines):
+        line, i = fold_continuations(lines, i)
+        ops = heredoc_ops(line)
+        if not ops:
+            out.append(line)
+            i += 1
+            continue
+        keep = consumer_is_shell(line, ops)
+        out.append(line)
+        i += 1
+        for _start, _end, strip_tabs, delim in ops:
+            body: list[str] = []
+            while i < len(lines):
+                candidate = lines[i].lstrip("\t") if strip_tabs else lines[i]
+                if candidate == delim:
+                    i += 1
+                    break
+                body.append(lines[i])
+                i += 1
+            if keep:
+                out.extend(body)
+    return " ; ".join(out)
+
+
 PROC_SUB = re.compile(
     r"(?<![\w])(bash|sh|zsh|dash|ksh|fish|source|python3?|node|perl|ruby)\s+<\(\s*(curl|wget)\b"
 )
@@ -348,7 +468,7 @@ SUBST_TICK = re.compile(r"`([^`]*)`")
 def check_all(command: str, depth: int = 0) -> None:
     if depth > MAX_DEPTH:
         return
-    command = command.strip()
+    command = strip_heredocs(command).strip()
     if not command:
         return
     argv = tokens(command)
