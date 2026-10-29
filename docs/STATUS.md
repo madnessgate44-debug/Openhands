@@ -2,9 +2,9 @@ BLOCKER: none
 last_seq: 3
 ack seq 3
 Last 5 actions:
+- idle: inbox seq 3 == last_seq 3 (no new message), backlog BL-1..BL-4 all `done` (BL-4 fixed on main by 3171f4c, PR #14 merged 2026-10-28), 0 open PRs. Nothing to do this run. Tests 175/175 pass with CLAUDE_INBOX_* unset (the 2 failures seen with them exported are a non-hermetic test harness, not a code defect; CI on main is green).
 - idle: re-checked inbox (seq 3 == last_seq 3, no new message), backlog (BL-1..BL-4 all `done`), open PRs (0). Nothing to do this run.
 - idle: inbox seq 3 == last_seq 3 (no new message), no `status=ready` backlog item, and 0 open PRs needing action. Nothing to do this run.
 - idle: inbox seq 3 == last_seq 3 (no new message), no `status=ready` backlog item, and 0 open PRs needing action. Nothing to do this run.
 - idle: inbox seq 3 == last_seq 3 (no new message), no `status=ready` backlog item, and 0 open PRs needing action. Nothing to do this run.
-- idle: inbox seq 3 == last_seq 3 (no new message), no `status=ready` backlog item, and 0 open PRs needing action. Nothing to do this run.
-Next: none queued. BL-1..BL-4 are all done. Awaiting a new inbox seq or a new `ready` backlog item.
+Next: none queued. BL-1..BL-4 are all done (BL-4 verified already fixed on main by 3171f4c / PR #14). Awaiting a new inbox seq or a new `ready` backlog item.
