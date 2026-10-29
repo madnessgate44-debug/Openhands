@@ -6,7 +6,7 @@ marketplace with `auto_load: true`, so every conversation picks them up.
 
 ## What is here
 
-- **32 skills** — 29 keyword-triggered skills plus 3 path-triggered rules.
+- **33 skills** — 29 keyword-triggered, 1 always-active (owner-policy) and 3 path-triggered rules.
 - **19 sub-agents** — a full software company plus project-specific roles.
 - **3 lifecycle hooks** — a destructive-command guard (PreToolUse), a quality gate (Stop) and a
   backlog gate (Stop) that keeps the self-driving loop going while work remains.
@@ -43,6 +43,7 @@ them under `dev.openhands/`. Removing the plugin declaration silently drops 19 a
 | Component | Count | Loads because |
 | - | - | - |
 | Skills | 29 | `skills/<name>/SKILL.md`, keyword `triggers:` |
+| Always-active | 1 | `skills/<name>/SKILL.md`, no `triggers:` (owner-policy) |
 | Path rules | 3 | `skills/<name>.md`, `paths:` globs |
 | Sub-agents | 19 | plugin → `dev.openhands/agents/*.md` |
 | Hooks | 3 | plugin → `dev.openhands/hooks/hooks.json` |

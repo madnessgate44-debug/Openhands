@@ -48,6 +48,9 @@ KNOWN_HOOK_EVENTS = {
 }
 SKILL_WORD_LIMIT = 3000
 NAME_RE = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
+# The one skill allowed to declare neither `triggers:` nor `paths:`, so it loads
+# always-active on every turn.
+ALWAYS_ACTIVE_SKILL = "owner-policy"
 
 
 def fail(msg: str) -> None:
@@ -145,7 +148,15 @@ def check_skills() -> int:
             fail(f"{rel(path)}: name '{name}' is not lowercase-hyphenated")
         check_description(path, fm)
         if "triggers" not in fm and "paths" not in fm:
-            fail(f"{rel(path)}: needs 'triggers:' or 'paths:'")
+            # Exactly one skill is allowed to be trigger-less: `owner-policy`,
+            # which is intentionally always-active (its text sits in
+            # <REPO_CONTEXT> on every turn). Any other trigger-less skill is a
+            # mistake, because always-active text costs context every turn.
+            if name != ALWAYS_ACTIVE_SKILL:
+                fail(
+                    f"{rel(path)}: needs 'triggers:' or 'paths:' "
+                    f"(only '{ALWAYS_ACTIVE_SKILL}' may be trigger-less)"
+                )
         # `paths:` wins over `triggers:` and silently drops the triggers, so
         # declaring both is almost always a mistake.
         if "paths" in fm and "triggers" in fm:
