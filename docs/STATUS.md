@@ -17,6 +17,7 @@ Details
 - No open PRs at run start (GitHub API returned `[]`). Nothing to audit or merge.
 
 Last 5 actions:
+- idle: inbox seq 3 == last_seq 3 (no new message), 0 open PRs (GitHub API), no `status=ready` backlog item (BL-1..BL-4 done). Re-verified on main 13de047: `scripts/validate.py` exit 0, `tests/hooks_test.sh` 175/175 with CLAUDE_INBOX_* unset, main CI green (Validate library success on 13de047). Nothing to do this run.
 - inbox seq 3 handled: read once (seq 3 == last_seq 3, but the `ack seq 3` line was missing, so wrote `last_seq: 3` + `ack seq 3`). Verified BL-4 already done on main; annotated `docs/BACKLOG.md`; docs-only PR for this STATUS bookkeeping. No code change.
 - idle: inbox seq 3 == last_seq 3 (no new message), 0 open PRs, no `status=ready` backlog item (BL-1..BL-4 all done). Re-verified on main 4718f82: `scripts/validate.py` exit 0 (33 skills, 19 sub-agents, 3 hooks), `tests/hooks_test.sh` 175/175 pass with CLAUDE_INBOX_* unset, main CI green (Validate library, success on 4718f82). Nothing to do this run.
 - idle: inbox seq 3 == last_seq 3 (no new message), 0 open PRs, no `status=ready` backlog item (BL-1..BL-4 all done). Re-verified on main 4db0cb0: `scripts/validate.py` exit 0 (33 skills, 19 sub-agents, 3 hooks), `tests/hooks_test.sh` 175/175 pass with CLAUDE_INBOX_* unset, main CI green (Validate library, success on 4db0cb0). Nothing to do this run.
