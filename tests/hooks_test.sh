@@ -13,6 +13,12 @@ GUARD="$ROOT/.agents/dev.openhands/hooks/guard.py"
 GATE="$ROOT/.agents/dev.openhands/hooks/quality_gate.sh"
 BLOGGATE="$ROOT/.agents/dev.openhands/hooks/backlog_gate.sh"
 
+# The gate reads the Claude inbox only when both variables are set. An ambient
+# shell may export them (and the real inbox may be reachable), which would make
+# the stub-less cases hit the network and flip their verdict. Clear them so
+# every case is hermetic; the inbox cases set their own stub and dummy values.
+unset CLAUDE_INBOX_ID CLAUDE_INBOX_TOKEN BACKLOG_GATE_CURL
+
 PASS=0
 FAIL=0
 
