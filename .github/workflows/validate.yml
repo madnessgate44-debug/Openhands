@@ -32,6 +32,8 @@ jobs:
       # error, not a reason to skip.
       - name: Run hook tests
         run: bash tests/hooks_test.sh
+      - name: Run watchdog tests
+        run: bash tests/watchdog_test.sh
       # Load the plugin through the real SDK loader, which catches a component
       # that is well-formed on disk but silently dropped at load time.
       - name: Loader smoke test
