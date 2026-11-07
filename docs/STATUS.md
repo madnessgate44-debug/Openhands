@@ -5,7 +5,7 @@ ack seq 3
 **Owner brief**
 - BLOCKER: none.
 - Changed: merged the pending LOW-risk status PR #110 (docs-only, `docs/STATUS.md`) under the `docs/LOOP.md` grant; this run opens the next status PR with its checkpoint.
-- Evidence: 6 Verified, 1 Observed-not-verified, 0 Blocked. UNVERIFIED: `scripts/loader_smoke.py` (openhands-sdk not installed in this sandbox; it runs the real check in CI).
+- Evidence: 7 Verified, 0 Observed-not-verified, 0 Blocked. `scripts/loader_smoke.py` now runs here (openhands-sdk installed), so nothing is UNVERIFIED.
 - Costs / irreversible steps: none.
 - Next action for the owner: decide on open PR #42 (watchdog, HIGH risk); add the `OPENHANDS_API_KEY` repo secret only if you want it.
 - Run 2026-11-07 (seventy-first): merged pending LOW-risk status PR #110 (head `1ced1ef12e1b`, `validate` success, `mergeable_state: clean`); no new inbox seq (seq 3 = `last_seq`), no `status=ready` item.
@@ -21,11 +21,11 @@ Details
 - Verified: PR #42 changed-file list includes `.github/workflows/validate.yml` and `.github/workflows/watchdog.yml` -> protected path -> HIGH risk -> not merged.
 - Verified: `scripts/validate.py` exit 0 ("skills: 33  sub-agents: 19  hooks: 3  OK").
 - Verified: `tests/hooks_test.sh` "TOTAL: 175 passed, 0 failed".
-- Observed-not-verified: `scripts/loader_smoke.py` cannot run in this sandbox (openhands-sdk not installed); CI runs the real loader check.
+- Verified: `scripts/loader_smoke.py` exit 0 after `pip install openhands-sdk==1.58.2` ("loaded plugin: account-library 1.0.0 / skills: 33  sub-agents: 19  hooks: True / OK"). This is the first run where it executes here instead of only in CI.
 - No schedule claim: a written cron is not a scheduler; sessions cannot self-schedule.
 
 Last 5 actions:
-- idle run (seventy-first): merged pending LOW-risk status PR #110 under the grant (marked ready first); no new inbox seq (seq 3 acked), no `status=ready` item; opened this status PR.
+- idle run (seventy-first): merged pending LOW-risk status PR #110 under the grant (marked ready first); no new inbox seq (seq 3 acked), no `status=ready` item; ran all three gates here incl. `loader_smoke.py`; opened this status PR.
 - idle run (seventieth): merged pending LOW-risk status PR #109 under the grant (marked ready first); no new inbox seq (seq 3 acked), no `status=ready` item; opened status PR #110 (merged).
 - idle run (sixty-ninth): merged pending LOW-risk status PR #108 under the grant; no new inbox seq (seq 3 acked), no `status=ready` item; opened status PR #109 (merged).
 - idle run (sixty-eighth): inbox seq 3 = `last_seq` (already handled), no `status=ready` item, only open PR is #42 (HIGH, watchdog); re-verified BL-4 heredoc fix present on `main`; opened status PR #108 (merged).
