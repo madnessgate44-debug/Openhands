@@ -98,11 +98,31 @@ if inside_work_tree; then
     if [ -n "$dirty" ]; then
       deny "There are uncommitted changes. Commit and push before finishing: git add -A && git commit -m \"...\" && git push -u origin HEAD${BRANCH_HINT}"
     fi
+    # The sandbox clone uses a narrow fetch refspec (only refs/heads/main), so a
+    # feature branch has no remote-tracking ref and `@{u}` does not resolve.
+    # Compare against the remote branch itself, not origin/main: otherwise the
+    # branch's own pushed commits look like unpushed work.
+    branch="$(git rev-parse --abbrev-ref HEAD 2>/dev/null)"
     upstream="$(git rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null)"
+    remote_ref=""
     if [ -n "$upstream" ]; then
-      ahead="$(git rev-list --count "${upstream}..HEAD" 2>/dev/null || echo 0)"
-    elif git rev-parse --verify -q origin/main >/dev/null 2>&1; then
-      ahead="$(git rev-list --count origin/main..HEAD 2>/dev/null || echo 0)"
+      remote_ref="$upstream"
+    elif [ -n "$branch" ] && [ "$branch" != "HEAD" ]; then
+      # ls-remote exit 0 means the remote answered. A missing branch ref then
+      # means "never pushed"; count against origin/main. A failed call means the
+      # remote is unreachable, so fall through and do not block.
+      if ls_out="$(timeout 10 git ls-remote origin "refs/heads/$branch" 2>/dev/null)"; then
+        ls_sha="$(printf '%s' "$ls_out" | cut -f1)"
+        if [ -n "$ls_sha" ]; then
+          git update-ref "refs/remotes/origin/$branch" "$ls_sha" 2>/dev/null || true
+          remote_ref="refs/remotes/origin/$branch"
+        elif git rev-parse --verify -q origin/main >/dev/null 2>&1; then
+          remote_ref="origin/main"
+        fi
+      fi
+    fi
+    if [ -n "$remote_ref" ]; then
+      ahead="$(git rev-list --count "${remote_ref}..HEAD" 2>/dev/null || echo 0)"
     else
       ahead=0
     fi
