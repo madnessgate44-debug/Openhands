@@ -19,6 +19,7 @@ Details
 - Verified: `tests/hooks_test.sh` "TOTAL: 179 passed, 0 failed" (was 175; +4 new cases: unpushed feature denies, pushed feature allows, never-pushed denies, unreachable remote allows).
 - Verified: `scripts/validate.py` exit 0 ("skills: 33  sub-agents: 19  hooks: 3  OK"); `scripts/loader_smoke.py` exit 0 ("loaded plugin: account-library 1.0.0 / skills: 33  sub-agents: 19  hooks: True / OK") after `pip install openhands-sdk`.
 - Verified: `bash -n` on both changed files OK; `git diff --check` clean.
+- Environment repair (this run): restored the standard fetch refspec in the clone's `.git/config` (`git config --add remote.origin.fetch '+refs/heads/*:refs/remotes/origin/*'`) so `@{u}` resolves and the installed gate passes truthfully (exit 0). This is not a committed change; the durable fix is PR #125. The old gate's denial was the BL-5 false positive, not real unpushed work (`git log --branches --not --remotes` was empty).
 - Open PRs after this run: #125 (BL-5, HIGH, draft), #42 (HIGH, unchanged since 2026-10-31), plus this status PR.
 - No schedule claim: a written cron is not a scheduler; sessions cannot self-schedule.
 
