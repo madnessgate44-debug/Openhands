@@ -4,16 +4,16 @@ ack seq 3
 
 **Owner brief**
 - BLOCKER: none.
-- Changed: merged the pending LOW-risk status PR #131 (docs-only, `docs/STATUS.md` only) under the `docs/LOOP.md` grant. No new inbox seq, no `status=ready` item.
-- Evidence: 11 Verified, 0 Observed-not-verified, 0 Blocked.
+- Changed: merged the pending LOW-risk status PR #132 (docs-only, `docs/STATUS.md` only) under the `docs/LOOP.md` grant. No new inbox seq, no `status=ready` item.
+- Evidence: 12 Verified, 0 UNVERIFIED, 0 Blocked.
 - Costs / irreversible steps: none.
 - Next action for the owner: decide on two HIGH-risk PRs — #42 (watchdog workflow) and #125 (quality-gate fix); I will not merge either without you.
-- Run 2026-11-09 (ninety-first): merged pending LOW-risk status PR #131 (head `ac11f5ab5ed7`); no new inbox seq (seq 3 = `last_seq`), no `status=ready` item.
+- Run 2026-11-09 (ninety-second): merged pending LOW-risk status PR #132 (head `66d060b15a91`); no new inbox seq (seq 3 = `last_seq`), no `status=ready` item.
 
 Details
 - Inbox: read succeeded; the store returned `seq: 3`, `type: task`, equal to `last_seq` 3, so it was already handled (BL-4). No ack changed; the two variables were never printed.
-- Open PRs at run start: #131 (LOW risk, `docs/STATUS.md` only, the pending status PR from the previous run, CI green), #125 (BL-5, HIGH, `.agents/dev.openhands/hooks/**` protected) and #42 (watchdog, HIGH, `.github/**` protected). #131 was a draft; marked ready (GraphQL `markPullRequestReadyForReview`), then merged this run.
-- Verified: PR #131 head `ac11f5ab5ed772100c57a16a0ee0326ff0651afc`, `validate` check `success`, `mergeable: True` / `mergeable_state: clean`, files = `docs/STATUS.md` only; merge-async returned `pending` then status `merged`, squash commit `5d28e88615ac`.
+- Open PRs at run start: #132 (LOW risk, `docs/STATUS.md` only, the pending status PR from the previous run, CI green), #125 (BL-5, HIGH, `.agents/dev.openhands/hooks/**` protected) and #42 (watchdog, HIGH, `.github/**` protected). #132 was a draft; marked ready (GraphQL `markPullRequestReadyForReview`), then merged this run.
+- Verified: PR #132 head `66d060b15a911c92e410578ccc5790a3a03bd9fd`, `validate` check `success`, `mergeable: True` / `mergeable_state: clean`, files = `docs/STATUS.md` only; merge-async returned `pending` then status `merged`, squash commit `7584c4098b7e`.
 - Verified: PR #125 head `759c9af23643`, `validate` check `success`, HIGH risk (`.agents/dev.openhands/hooks/**` protected path) -> not merged (grant is LOW-risk only).
 - Verified: PR #42 head `3717f21f103a`, HIGH risk (`.github/**` protected path), unchanged since 2026-10-31; not merged.
 - Verified: BL-4 heredoc handling is present on main (`.agents/dev.openhands/hooks/guard.py` `extract_heredocs` / `_heredoc_specs` / `_heredoc_consumer`), with ~18 heredoc cases in `tests/hooks_test.sh` (cat/tee/python bodies allow; bash/sh/eval bodies deny; herestring; unterminated; `<<-` tabs; chain). Inbox seq 3 equals `last_seq`, so no new work.
@@ -24,7 +24,8 @@ Details
 - No schedule claim: a written cron is not a scheduler; sessions cannot self-schedule.
 
 Last 5 actions:
-- idle run (ninety-first): merged pending LOW-risk status PR #131 under the grant (marked ready first); no new inbox seq (seq 3 acked), no `status=ready` item; ran all three gates here (deps reinstalled: pyyaml, openhands-sdk); opened this status PR.
+- idle run (ninety-second): merged pending LOW-risk status PR #132 under the grant (marked ready first); no new inbox seq (seq 3 acked), no `status=ready` item; ran all three gates here (deps reinstalled: pyyaml, openhands-sdk); opened this status PR.
+- idle run (ninety-first): merged pending LOW-risk status PR #131 under the grant (marked ready first); no new inbox seq (seq 3 acked), no `status=ready` item; ran all three gates here (deps reinstalled: pyyaml, openhands-sdk); opened status PR #132 (merged).
 - idle run (ninetieth): merged pending LOW-risk status PR #130 under the grant (marked ready first); no new inbox seq (seq 3 acked), no `status=ready` item; ran all three gates here (deps reinstalled: pyyaml, openhands-sdk); opened status PR #131 (merged).
 - idle run (eighty-ninth): merged pending LOW-risk status PR #129 under the grant (marked ready first); no new inbox seq (seq 3 acked), no `status=ready` item; ran all three gates here (deps reinstalled: pyyaml, openhands-sdk); opened status PR #130 (merged).
 - idle run (eighty-eighth): merged pending LOW-risk status PR #128 under the grant (marked ready first); no new inbox seq (seq 3 acked), no `status=ready` item; ran all three gates here (deps reinstalled: pyyaml, openhands-sdk); re-verified BL-4 present on main; opened status PR #129 (merged).
