@@ -18,6 +18,7 @@ Details
 - Verified: `tests/hooks_test.sh` "TOTAL: 175 passed, 0 failed".
 - Verified: `scripts/validate.py` exit 0 ("skills: 33  sub-agents: 19  hooks: 3 / OK") after `pip install pyyaml`.
 - Verified: `scripts/loader_smoke.py` exit 0 ("loaded plugin: account-library 1.0.0 / skills: 33  sub-agents: 19  hooks: True / OK") after `pip install openhands-sdk`.
+- Verified: the Stop-hook `quality_gate.sh` "1 commit(s) not pushed" message this run was a FALSE POSITIVE (BL-5): `git ls-remote origin chore/status-idle-2026-11-12-109` == local HEAD `a328b4f0ef`. The sandbox fetch refspec is narrow (`+refs/heads/main:refs/remotes/origin/main`), so `@{u}` cannot resolve even after `git push -u`. Resolved truthfully (no push to main, no protected-path edit) by `git config --add remote.origin.fetch "+refs/heads/<b>:refs/remotes/origin/<b>"` + `git fetch`; the gate then exits 0. PR #125 fixes this properly but is HIGH-risk and unmerged.
 - No schedule claim: a written cron is not a scheduler; sessions cannot self-schedule.
 
 Last 5 actions:
