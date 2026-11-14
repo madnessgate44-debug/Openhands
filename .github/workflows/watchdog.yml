@@ -1,0 +1,47 @@
+name: Loop watchdog
+
+# Lives OUTSIDE any conversation, so it survives the failure that killed the
+# 2026-10-30 run: the hooks and the backlog gate run inside the conversation and
+# die with it. This one is a GitHub Action.
+#
+# Required repository secret: OPENHANDS_API_KEY (the watchdog cannot start a
+# conversation without it). GITHUB_TOKEN is provided by Actions automatically.
+#
+# To disable: create docs/WATCHDOG_OFF (one line of text is enough), or disable
+# this workflow in the Actions tab.
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+# Never let two watchdog ticks overlap.
+concurrency:
+  group: loop-watchdog
+  cancel-in-progress: false
+
+jobs:
+  watchdog:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Check for the kill switch
+        id: kill
+        run: |
+          if [ -f docs/WATCHDOG_OFF ]; then
+            echo "off=true" >> "$GITHUB_OUTPUT"
+            echo "Kill switch present (docs/WATCHDOG_OFF); the watchdog will not restart anything."
+          else
+            echo "off=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Run the watchdog
+        if: steps.kill.outputs.off == 'false'
+        env:
+          OPENHANDS_API_KEY: ${{ secrets.OPENHANDS_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          WATCHDOG_STALE_MINUTES: "45"
+          WATCHDOG_MAX_RESTARTS_24H: "6"
+        run: python3 scripts/watchdog.py
