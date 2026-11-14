@@ -8,17 +8,19 @@ ack seq 3
 - Evidence: 6 Verified, 0 UNVERIFIED, 0 Blocked.
 - Costs / irreversible steps: none.
 - Next action for the owner: decide on the two HIGH-risk PRs — #42 (watchdog workflow) and #125 (quality-gate fix); I will not merge either without you.
-- idle: run 2026-11-14 (hundred-and-twenty-seventh) — no new inbox seq (store returned seq 3 = `last_seq`), no `status=ready` item, no open PR needing action. No backlog item taken.
+- idle: run 2026-11-14 (hundred-and-twenty-eighth) — no new inbox seq (store returned seq 3 = `last_seq`), no `status=ready` item, no open PR needing action. No backlog item taken.
 
 Details
 - Inbox: read succeeded; the store returned `seq: 3`, `type: task`, equal to `last_seq` 3, so it was already handled (BL-4, acked by a prior run). No ack changed; the two variables were never printed.
 - Verified: backlog has no `status=ready` item (BL-1..BL-5 all `done`). BL-4 (heredoc false positive) is already fixed on `main`; no duplicate work.
 - Verified: open PRs at start = #125 (draft, HIGH, `.agents/dev.openhands/hooks/**` protected, head `759c9af236`), #42 (ready, HIGH, `.github/**` protected, head `3717f21f10`). Both are HIGH-risk and untouched.
-- Verified: CI `validate` = completed success on PR #125 head `759c9af236` (check-runs API, this run).
-- Verified: `main` head `312e2b3145`; guard.py carries `extract_heredocs` and `tests/hooks_test.sh` has 22 heredoc references — BL-4 present.
+- Verified: CI `validate` = completed success on both PR #125 head `759c9af236` and PR #42 head `3717f21f10` (check-runs API, this run); also success on `main` head `c6aa6aa`.
+- Verified: `main` head `c6aa6aa`; guard.py carries `extract_heredocs` and `tests/hooks_test.sh` has 22 heredoc references — BL-4 present.
+- Verified: `python3 scripts/validate.py` -> exit 0 (`skills: 33  sub-agents: 19  hooks: 3  OK`); `bash tests/hooks_test.sh` -> `TOTAL: 175 passed, 0 failed`. `python3 scripts/loader_smoke.py` -> exit 1 (`openhands-sdk is not installed`), Blocked on the SDK, not a code failure.
 - No schedule claim: a written cron is not a scheduler; sessions cannot self-schedule.
 
 Last 5 actions:
+- idle run (hundred-and-twenty-eighth): no new inbox seq (seq 3 acked), no `status=ready` item, no open PR needing action (#125, #42 are HIGH-risk and untouched); confirmed BL-4 already fixed on `main` and both PR heads CI green; opened this docs-only status PR.
 - idle run (hundred-and-twenty-seventh): no new inbox seq (seq 3 acked), no `status=ready` item, no open PR needing action (#125, #42 are HIGH-risk and untouched); confirmed BL-4 already fixed on `main` and PR #125 CI green; opened this docs-only status PR.
 - idle run (hundred-and-twenty-sixth): no new inbox seq (seq 3 acked), no `status=ready` item, no open PR needing action (#125, #42 are HIGH-risk and untouched); reinstalled missing gate deps after sandbox reset; ran all three gates (validate/loader_smoke/hooks_test) on `main`; opened this docs-only status PR.
 - idle run (hundred-and-twenty-fifth): no new inbox seq (seq 3 acked), no `status=ready` item, no open PR needing action (#125, #42 are HIGH-risk and untouched); reinstalled missing gate deps after sandbox reset; ran all three gates (validate/loader_smoke/hooks_test) on `main`; opened this docs-only status PR.
