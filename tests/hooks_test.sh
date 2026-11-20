@@ -478,6 +478,74 @@ else
 fi
 rm -rf "$up_tmp" "/tmp/openhands_quality_gate_${upkey}"
 
+echo "=== quality_gate.sh: pushed feature branch is not reported as unpushed ==="
+# The sandbox clone uses a narrow fetch refspec (only refs/heads/main), so a
+# feature branch has no remote-tracking ref and `@{u}` does not resolve. The
+# gate must compare against the remote branch, not origin/main, or the branch's
+# own pushed commits look like unpushed work (false positive).
+fb_tmp="$(mktemp -d)"
+git init -q --bare "$fb_tmp/origin.git"
+git -C "$fb_tmp/origin.git" symbolic-ref HEAD refs/heads/main
+git clone -q "$fb_tmp/origin.git" "$fb_tmp/w" >/dev/null 2>&1
+(
+  cd "$fb_tmp/w" || exit 1
+  git config user.email t@t.t
+  git config user.name t
+  printf 'x\n' > f.txt
+  git add f.txt
+  git commit -qm init
+  git push -q -u origin HEAD 2>/dev/null || git push -q -u origin master
+  git switch -q -c feature/x
+  printf 'y\n' >> f.txt
+  git add f.txt
+  git commit -qm second   # unpushed on the feature branch
+) >/dev/null 2>&1
+fbkey="$(printf '%s' "$fb_tmp/w" | cksum | cut -d' ' -f1)"
+rm -f "/tmp/openhands_quality_gate_${fbkey}"
+fbout="$( cd "$fb_tmp/w" && OPENHANDS_PROJECT_DIR="$fb_tmp/w" bash "$GATE"; echo "rc=$?" )"
+if printf '%s' "$fbout" | grep -q 'rc=2' && printf '%s' "$fbout" | grep -q 'not pushed'; then
+  PASS=$((PASS + 1)); printf 'PASS gate unpushed feature commit denies\n'
+else
+  FAIL=$((FAIL + 1)); printf 'FAIL gate unpushed feature commit (%s)\n' "$fbout"
+fi
+# push the feature branch -> the same commit must now be allowed
+(
+  cd "$fb_tmp/w" || exit 1
+  git push -q origin HEAD
+) >/dev/null 2>&1
+rm -f "/tmp/openhands_quality_gate_${fbkey}"
+fbout2="$( cd "$fb_tmp/w" && OPENHANDS_PROJECT_DIR="$fb_tmp/w" bash "$GATE"; echo "rc=$?" )"
+if printf '%s' "$fbout2" | grep -q 'rc=0'; then
+  PASS=$((PASS + 1)); printf 'PASS gate pushed feature branch allows\n'
+else
+  FAIL=$((FAIL + 1)); printf 'FAIL gate pushed feature branch (%s)\n' "$fbout2"
+fi
+# a feature branch that was never pushed must still deny
+(
+  cd "$fb_tmp/w" || exit 1
+  git switch -q -c feature/never
+) >/dev/null 2>&1
+rm -f "/tmp/openhands_quality_gate_${fbkey}"
+fbout3="$( cd "$fb_tmp/w" && OPENHANDS_PROJECT_DIR="$fb_tmp/w" bash "$GATE"; echo "rc=$?" )"
+if printf '%s' "$fbout3" | grep -q 'rc=2' && printf '%s' "$fbout3" | grep -q 'not pushed'; then
+  PASS=$((PASS + 1)); printf 'PASS gate never-pushed feature branch denies\n'
+else
+  FAIL=$((FAIL + 1)); printf 'FAIL gate never-pushed feature branch (%s)\n' "$fbout3"
+fi
+# an unreachable remote must not block (fail open)
+(
+  cd "$fb_tmp/w" || exit 1
+  git remote set-url origin "$fb_tmp/nonexistent.git"
+) >/dev/null 2>&1
+rm -f "/tmp/openhands_quality_gate_${fbkey}"
+fbout4="$( cd "$fb_tmp/w" && OPENHANDS_PROJECT_DIR="$fb_tmp/w" bash "$GATE"; echo "rc=$?" )"
+if printf '%s' "$fbout4" | grep -q 'rc=0'; then
+  PASS=$((PASS + 1)); printf 'PASS gate unreachable remote allows\n'
+else
+  FAIL=$((FAIL + 1)); printf 'FAIL gate unreachable remote (%s)\n' "$fbout4"
+fi
+rm -rf "$fb_tmp" "/tmp/openhands_quality_gate_${fbkey}"
+
 echo "=== quality_gate.sh: .openhands/ is not treated as uncommitted work ==="
 oh_tmp="$(mktemp -d)"
 git init -q --bare "$oh_tmp/origin.git"
