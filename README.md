@@ -29,9 +29,12 @@ marketplace with `auto_load: true`, so every conversation picks them up.
 docs/LOOP.md                  # loop protocol + the owner's merge grant
 docs/BACKLOG.md               # the queue
 docs/STATUS.md                # what Claude reads first
+docs/WATCHDOG.md              # the out-of-conversation watchdog
 scripts/validate.py           # validates every manifest, frontmatter, skill and hook
 scripts/loader_smoke.py       # loads the plugin through the real OpenHands SDK loader
+scripts/watchdog.py           # restarts a stalled loop from outside the conversation
 tests/hooks_test.sh           # exercises the guard and the gates
+tests/watchdog_test.sh        # exercises the watchdog guardrails
 ```
 
 Why the indirection: a marketplace on its own loads **only** skills. Sub-agents and hooks load
@@ -149,6 +152,7 @@ curl -X POST -H "Authorization: Bearer $OPENHANDS_API_KEY" -H "Content-Type: app
 ```bash
 python3 scripts/validate.py        # manifests, frontmatter, skills, sub-agents, hooks
 bash tests/hooks_test.sh           # guard allow/deny cases and the quality-gate loop breaker
+bash tests/watchdog_test.sh        # watchdog guardrails, staleness and logging
 python3 scripts/loader_smoke.py    # loads the plugin through the real SDK loader
 ```
 
