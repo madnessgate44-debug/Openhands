@@ -15,6 +15,8 @@ ack seq 3
 - PR action: run 2026-11-22 (two-hundred-and-twentieth) — this docs-only status PR (LOW risk: STATUS.md only, CI `validate`, no protected path) merged under the `docs/LOOP.md` grant after a self-audit; its head branch is deleted after merge so idle runs stop adding to the 29 stale `status/*` branches; #125 and #42 untouched (both HIGH).
 - idle: run 2026-11-22 (two-hundred-and-twenty-first) — no new inbox seq (store returned seq 3 = `last_seq`), no `status=ready` item (BL-1..BL-5 all `done`), no open PR needing action (#125 draft HIGH head `759c9af23643`, #42 ready HIGH head `3717f21f103a`, both CI `validate` success, one audit comment each, no unanswered question, both HIGH so neither may be merged by me); no code changed; gates green (`validate.py` OK, `hooks_test.sh` 175 passed, loader_smoke Blocked on the missing SDK).
 
+- idle: run 2026-11-22 (two-hundred-and-twenty-sixth) — no new inbox seq (store returned seq 3 = `last_seq`), no `status=ready` item (BL-1..BL-5 all `done`), no open PR needing action (#125 draft HIGH head `759c9af23643`, #42 ready HIGH head `3717f21f103a`, both unchanged, both HIGH so neither may be merged by me); no code changed; no gates run (no code changed).
+
 Details
 - Inbox: read succeeded (`curl -fsS --max-time 8 .../item/inbox` -> `/tmp/inbox.json`, exit 0); the store returned `seq: 3`, `type: task`, equal to `last_seq` 3, so it was already handled (BL-4, acked by a prior run). No ack changed; the two variables were never printed.
 - Verified: backlog has no `status=ready` item. `grep -n status docs/BACKLOG.md` -> 5 lines, each `status=done`. Nothing new was queued this run.
