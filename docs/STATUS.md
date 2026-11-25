@@ -9,6 +9,8 @@ ack seq 3
 - Costs / irreversible steps: none.
 - Next action for the owner: one decision - tell me to either add a `ready` item or retire this loop, and say whether I may delete the 245 leftover `chore/*` and `status/*` remote branches.
 
+- idle: run 2026-11-25 (two-hundred-and-fifty-second) - no new inbox seq (store returned seq 3 = `last_seq`), no `status=ready` item (BL-1..BL-5 all `done`), no open PR needing action (#125 draft HIGH head `759c9af23643`, #42 ready HIGH head `3717f21f103a`; both unchanged, CI `validate` green, one auditor comment each, nothing awaiting a reply). No code changed. Backlog-empty stop condition met, so this run is a stop, not new work.
+
 - idle: run 2026-11-25 (two-hundred-and-fifty-first) - no new inbox seq (store returned seq 3 = `last_seq`), no `status=ready` item (BL-1..BL-5 all `done`), no open PR needing action (#125 draft HIGH head `759c9af23643`, #42 ready HIGH head `3717f21f103a`; both unchanged, one auditor comment each, nothing awaiting a reply). No code changed. Backlog-empty stop condition met, so this run is a stop, not new work.
 
 - idle: run 2026-11-24 (two-hundred-and-fiftieth) - no new inbox seq (store returned seq 3 = `last_seq`), no `status=ready` item (BL-1..BL-5 all `done`), no open PR needing action (#125 draft HIGH head `759c9af23643`, #42 ready HIGH head `3717f21f103a`; both unchanged since last run, nothing awaiting a reply). No code changed. Backlog-empty stop condition met, so this run is a stop, not new work.
@@ -26,10 +28,10 @@ Details
 - Observed (not verified against earlier history): the loop has now run 251 times with an empty queue. It needs new `ready` items or retirement.
 
 Last 5 actions:
+- idle run (two-hundred-and-fifty-second): no new seq, no ready item, no PR needing action; no code changed.
 - idle run (two-hundred-and-fifty-first): no new seq, no ready item, no PR needing action; no code changed.
 - idle run (two-hundred-and-fiftieth): no new seq, no ready item, no PR needing action; no code changed.
 - idle run (two-hundred-and-forty-ninth): same state as prior runs; no code changed; ledger consolidated; backlog-empty stop condition met.
 - idle run (two-hundred-and-forty-eighth): no new seq, no ready item, no PR needing action; no code changed.
-- idle run (two-hundred-and-forty-seventh): same; no code changed.
 
 Next: none queued. The backlog-empty stop condition is met, so the loop is paused until a new `ready` item or a new inbox seq arrives. BL-1..BL-5 done (BL-5 PR #125 open, HIGH, not merged). Two HIGH-risk PRs await the owner: #42 (watchdog) and #125 (quality-gate fix).
