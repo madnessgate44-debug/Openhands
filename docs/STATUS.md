@@ -4,10 +4,14 @@ ack seq 3
 
 **Owner brief**
 - BLOCKER: none.
-- Changed: docs/STATUS.md only (one idle line for run 255). No code changed.
-- Evidence: 3 Verified (inbox returned seq 3 = `last_seq`, already handled; no `status=ready` backlog item; both open PRs unchanged at their recorded heads, one auditor comment each, nothing awaiting a reply). 1 Blocked (loader_smoke: OpenHands SDK not installed here).
+- Changed: docs/STATUS.md and docs/BACKLOG.md only (bookkeeping for run 256). No code changed.
+- Evidence: 5 Verified (inbox seq 3 = `last_seq`, already handled; no `status=ready` item; you merged PR #125 yourself at 08:51 UTC today, so BL-5 is on main; `validate.py` exit 0 and `tests/hooks_test.sh` 180 passed / 0 failed on main; PR #42 unchanged, HIGH risk). 1 Blocked (loader_smoke: OpenHands SDK not installed here).
 - Costs / irreversible steps: none.
-- Next action for the owner: one decision - tell me to either add a `ready` item or retire this loop, and say whether I may delete the 245 leftover `chore/*` and `status/*` remote branches.
+- Next action for the owner: merge or close PR #42 (watchdog) - it is HIGH risk, so the loop will not touch it.
+
+- note: PR #125 (BL-5, quality-gate "not pushed" false positive) was merged by the owner (madnessgate44-debug) at 2026-11-25T08:51:54Z, merge commit `a0dce4b2dd15`, base `main`. The loop did not merge it; the no-HIGH-merge rule held. Verified on main: `quality_gate.sh` resolves upstream via `git ls-remote origin refs/heads/<branch>` (line 114) and `tests/hooks_test.sh` passes 180/0.
+
+- idle: run 2026-11-25 (two-hundred-and-fifty-sixth) - no new inbox seq (store returned seq 3 = `last_seq`), no `status=ready` item (BL-1..BL-5 all `done`, BL-5 now merged), no open PR needing action (#42 ready HIGH head `3717f21f103a`, one pr-auditor comment, nothing awaiting a reply; HIGH, so the loop will not merge). Gates green on main. No code changed. Backlog-empty stop condition met, so this run is a stop, not new work.
 
 - idle: run 2026-11-25 (two-hundred-and-fifty-fifth) - no new inbox seq (store returned seq 3 = `last_seq`), no `status=ready` item (BL-1..BL-5 all `done`), no open PR needing action (#125 draft HIGH head `759c9af23643`, #42 ready HIGH head `3717f21f103a`; both unchanged, one pr-auditor comment each, nothing awaiting a reply). No code changed. Backlog-empty stop condition met, so this run is a stop, not new work.
 
@@ -31,13 +35,14 @@ Details
 - Self-audit (no pr-auditor sub-agent in this session): this change touches only `docs/STATUS.md`, a non-protected path, ledger text only. LOW risk.
 - Housekeeping (not done, needs the owner's word): `git ls-remote --heads origin | wc -l` = 245 remote branches, mostly stale `chore/idle-*` and `status/*` from earlier idle runs. Deleting them is a remote write, so not done unasked.
 - No schedule claim: a written cron is not a scheduler; sessions cannot self-schedule.
-- Observed (not verified against earlier history): the loop has now run 255 times with an empty queue. It needs new `ready` items or retirement.
+- Observed (not verified against earlier history): the loop has now run 256 times with an empty queue. It needs new `ready` items or retirement.
 
 Last 5 actions:
+- idle run (two-hundred-and-fifty-sixth): no new seq, no ready item, no PR needing action; verified #125 merged by owner and gates green on main; ledger only.
 - idle run (two-hundred-and-fifty-fifth): no new seq, no ready item, no PR needing action; no code changed.
 - idle run (two-hundred-and-fifty-fourth): no new seq, no ready item, no PR needing action; no code changed.
 - idle run (two-hundred-and-fifty-third): no new seq, no ready item, no PR needing action; no code changed.
 - idle run (two-hundred-and-fifty-second): no new seq, no ready item, no PR needing action; no code changed.
 - idle run (two-hundred-and-fifty-first): no new seq, no ready item, no PR needing action; no code changed.
 
-Next: none queued. The backlog-empty stop condition is met, so the loop is paused until a new `ready` item or a new inbox seq arrives. BL-1..BL-5 done (BL-5 PR #125 open, HIGH, not merged). Two HIGH-risk PRs await the owner: #42 (watchdog) and #125 (quality-gate fix).
+Next: none queued. The backlog-empty stop condition is met, so the loop is paused until a new `ready` item or a new inbox seq arrives. BL-1..BL-5 done; BL-5 merged by the owner as PR #125. One HIGH-risk PR awaits the owner: #42 (watchdog).
