@@ -4,10 +4,12 @@ ack seq 3
 
 **Owner brief**
 - BLOCKER: none.
-- Changed: docs/STATUS.md and docs/BACKLOG.md only (bookkeeping for run 256). No code changed.
-- Evidence: 5 Verified (inbox seq 3 = `last_seq`, already handled; no `status=ready` item; you merged PR #125 yourself at 08:51 UTC today, so BL-5 is on main; `validate.py` exit 0 and `tests/hooks_test.sh` 180 passed / 0 failed on main; PR #42 unchanged, HIGH risk). 1 Blocked (loader_smoke: OpenHands SDK not installed here).
+- Changed: docs/STATUS.md only (bookkeeping for run 257; PR #288). No code changed.
+- Evidence: 6 Verified (inbox seq 3 = `last_seq`, already handled; no `status=ready` item; PR #125 is merged, merge commit `a0dce4b2dd15`, so BL-5 is on main; `python3 scripts/validate.py` exit 0; `tests/hooks_test.sh` 180 passed / 0 failed on this branch; PR #288 CI `validate` success and mergeable clean; PR #42 unchanged, HIGH risk). 1 Blocked (loader_smoke: OpenHands SDK not installed in this sandbox; CI runs it).
 - Costs / irreversible steps: none.
 - Next action for the owner: merge or close PR #42 (watchdog) - it is HIGH risk, so the loop will not touch it.
+
+- finish: run 2026-11-25 (two-hundred-and-fifty-seventh) - no new inbox seq (store returned seq 3 = `last_seq`), no `status=ready` item (BL-1..BL-5 all `done`; BL-5 merged by the owner). The open PR needing action was this loop's own ledger PR #288 (draft, LOW risk, docs only, CI `validate` green, mergeable clean): verified its claims against the API (PR #125 merged at 2026-11-25T08:51:54Z), added this line, and merged it under the owner grant. PR #42 remains HIGH, untouched. Gates on this branch: validate exit 0, hooks_test 180 passed / 0 failed, loader_smoke Blocked (SDK absent). No code changed.
 
 - note: PR #125 (BL-5, quality-gate "not pushed" false positive) was merged by the owner (madnessgate44-debug) at 2026-11-25T08:51:54Z, merge commit `a0dce4b2dd15`, base `main`. The loop did not merge it; the no-HIGH-merge rule held. Verified on main: `quality_gate.sh` resolves upstream via `git ls-remote origin refs/heads/<branch>` (line 114) and `tests/hooks_test.sh` passes 180/0.
 
@@ -38,11 +40,10 @@ Details
 - Observed (not verified against earlier history): the loop has now run 256 times with an empty queue. It needs new `ready` items or retirement.
 
 Last 5 actions:
+- finish run (two-hundred-and-fifty-seventh): merged own ledger PR #288 (LOW, docs only); no code changed.
 - idle run (two-hundred-and-fifty-sixth): no new seq, no ready item, no PR needing action; verified #125 merged by owner and gates green on main; ledger only.
-- idle run (two-hundred-and-fifty-fifth): no new seq, no ready item, no PR needing action; no code changed.
 - idle run (two-hundred-and-fifty-fourth): no new seq, no ready item, no PR needing action; no code changed.
 - idle run (two-hundred-and-fifty-third): no new seq, no ready item, no PR needing action; no code changed.
 - idle run (two-hundred-and-fifty-second): no new seq, no ready item, no PR needing action; no code changed.
-- idle run (two-hundred-and-fifty-first): no new seq, no ready item, no PR needing action; no code changed.
 
 Next: none queued. The backlog-empty stop condition is met, so the loop is paused until a new `ready` item or a new inbox seq arrives. BL-1..BL-5 done; BL-5 merged by the owner as PR #125. One HIGH-risk PR awaits the owner: #42 (watchdog).
