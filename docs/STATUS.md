@@ -4,10 +4,12 @@ ack seq 3
 
 **Owner brief**
 - BLOCKER: none.
-- Changed: docs/STATUS.md only (one idle line for this run). No code changed.
+- Changed: docs/STATUS.md only (one idle line for run 253). No code changed.
 - Evidence: 3 Verified (inbox returned seq 3 = `last_seq`, already handled; no `status=ready` backlog item; both open PRs unchanged at their recorded heads, one auditor comment each, nothing awaiting a reply). 1 Blocked (loader_smoke: OpenHands SDK not installed here).
 - Costs / irreversible steps: none.
 - Next action for the owner: one decision - tell me to either add a `ready` item or retire this loop, and say whether I may delete the 245 leftover `chore/*` and `status/*` remote branches.
+
+- idle: run 2026-11-25 (two-hundred-and-fifty-third) - no new inbox seq (store returned seq 3 = `last_seq`), no `status=ready` item (BL-1..BL-5 all `done`), no open PR needing action (#125 draft HIGH head `759c9af23643`, #42 ready HIGH head `3717f21f103a`; both unchanged, `validate` green on both, one auditor comment each, nothing awaiting a reply). No code changed. Backlog-empty stop condition met, so this run is a stop, not new work.
 
 - idle: run 2026-11-25 (two-hundred-and-fifty-second) - no new inbox seq (store returned seq 3 = `last_seq`), no `status=ready` item (BL-1..BL-5 all `done`), no open PR needing action (#125 draft HIGH head `759c9af23643`, #42 ready HIGH head `3717f21f103a`; both unchanged, CI `validate` green, one auditor comment each, nothing awaiting a reply). No code changed. Backlog-empty stop condition met, so this run is a stop, not new work.
 
@@ -28,6 +30,7 @@ Details
 - Observed (not verified against earlier history): the loop has now run 251 times with an empty queue. It needs new `ready` items or retirement.
 
 Last 5 actions:
+- idle run (two-hundred-and-fifty-third): no new seq, no ready item, no PR needing action; no code changed.
 - idle run (two-hundred-and-fifty-second): no new seq, no ready item, no PR needing action; no code changed.
 - idle run (two-hundred-and-fifty-first): no new seq, no ready item, no PR needing action; no code changed.
 - idle run (two-hundred-and-fiftieth): no new seq, no ready item, no PR needing action; no code changed.
