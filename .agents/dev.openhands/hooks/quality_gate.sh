@@ -119,6 +119,14 @@ if inside_work_tree; then
         elif git rev-parse --verify -q origin/main >/dev/null 2>&1; then
           remote_ref="origin/main"
         fi
+      else
+        # Unreachable remote: push state is UNKNOWN, not "pushed". If there are
+        # commits beyond origin/main that could be lost, deny as incomplete (the
+        # loop breaker still bounds this). No local-only commits: nothing at risk.
+        unk="$(git rev-list --count origin/main..HEAD 2>/dev/null || echo 0)"
+        if [ "${unk:-0}" -gt 0 ]; then
+          deny "Cannot verify push: remote origin is unreachable and ${unk} commit(s) are not on origin/main. Retry git push -u origin HEAD${BRANCH_HINT} when the network is back; until then this work is unverified, not done."
+        fi
       fi
     fi
     if [ -n "$remote_ref" ]; then
