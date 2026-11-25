@@ -532,17 +532,29 @@ if printf '%s' "$fbout3" | grep -q 'rc=2' && printf '%s' "$fbout3" | grep -q 'no
 else
   FAIL=$((FAIL + 1)); printf 'FAIL gate never-pushed feature branch (%s)\n' "$fbout3"
 fi
-# an unreachable remote must not block (fail open)
+# an unreachable remote with unpushed work is UNKNOWN: deny as incomplete
 (
   cd "$fb_tmp/w" || exit 1
-  git remote set-url origin "$fb_tmp/nonexistent.git"
+  git config remote.origin.url "$fb_tmp/nonexistent.git"
 ) >/dev/null 2>&1
 rm -f "/tmp/openhands_quality_gate_${fbkey}"
 fbout4="$( cd "$fb_tmp/w" && OPENHANDS_PROJECT_DIR="$fb_tmp/w" bash "$GATE"; echo "rc=$?" )"
-if printf '%s' "$fbout4" | grep -q 'rc=0'; then
-  PASS=$((PASS + 1)); printf 'PASS gate unreachable remote allows\n'
+if printf '%s' "$fbout4" | grep -q 'rc=2' && printf '%s' "$fbout4" | grep -q 'Cannot verify push'; then
+  PASS=$((PASS + 1)); printf 'PASS gate unreachable remote with local commits denies as unverified\n'
 else
   FAIL=$((FAIL + 1)); printf 'FAIL gate unreachable remote (%s)\n' "$fbout4"
+fi
+# unreachable remote and nothing beyond origin/main: nothing at risk, allow
+(
+  cd "$fb_tmp/w" || exit 1
+  git switch -q -c feature/clean origin/main
+) >/dev/null 2>&1
+rm -f "/tmp/openhands_quality_gate_${fbkey}"
+fbout5="$( cd "$fb_tmp/w" && OPENHANDS_PROJECT_DIR="$fb_tmp/w" bash "$GATE"; echo "rc=$?" )"
+if printf '%s' "$fbout5" | grep -q 'rc=0'; then
+  PASS=$((PASS + 1)); printf 'PASS gate unreachable remote with no local commits allows\n'
+else
+  FAIL=$((FAIL + 1)); printf 'FAIL gate unreachable clean (%s)\n' "$fbout5"
 fi
 rm -rf "$fb_tmp" "/tmp/openhands_quality_gate_${fbkey}"
 
