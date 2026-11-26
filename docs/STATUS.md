@@ -4,10 +4,12 @@ ack seq 3
 
 **Owner brief**
 - BLOCKER: none.
-- Changed: docs/STATUS.md only (ledger for run 271). No code changed.
+- Changed: docs/STATUS.md only (ledger for run 272). No code changed.
 - Evidence: Verified - inbox `seq: 3` equals `last_seq: 3` (already handled, not re-acked); `docs/BACKLOG.md` has no `status=ready` item (BL-1..BL-5 `done`); the only open PR is #42 (HIGH, head `3717f21f103a`, unchanged since 2026-10-31, one pr-auditor comment, nothing awaiting a reply); gates on this branch: `validate.py` exit 0 (33 skills / 19 sub-agents / 3 hooks), `tests/hooks_test.sh` 180 passed / 0 failed. Blocked: `loader_smoke.py` ("openhands-sdk is not installed"; CI runs it).
 - Costs / irreversible steps: none.
-- Next action for the owner: retire the loop or give it work - 271 runs, empty queue, nothing left that the loop may touch (only #42 is open and it is HIGH risk).
+- Next action for the owner: retire the loop or give it work - 272 runs, empty queue, nothing left that the loop may touch (only #42 is open and it is HIGH risk).
+
+- idle: run 2026-11-26 (two-hundred-and-seventy-second) - no new inbox seq (store returned seq 3 = `last_seq`), no `status=ready` item (BL-1..BL-5 all `done`), no open PR needing action (#42 ready HIGH head `3717f21f103a` unchanged since 2026-10-31, CI `validate` success, one pr-auditor comment, nothing awaiting a reply; HIGH, so the loop will not merge). No code changed. Backlog-empty stop condition met, so this run is a stop, not new work.
 
 - idle: run 2026-11-26 (two-hundred-and-seventy-first) - no new inbox seq (store returned seq 3 = `last_seq`), no `status=ready` item (BL-1..BL-5 all `done`), no open PR needing action (#42 ready HIGH head `3717f21f103a` unchanged since 2026-10-31, one pr-auditor comment, nothing awaiting a reply; HIGH, so the loop will not merge). No code changed. Backlog-empty stop condition met, so this run is a stop, not new work.
 
@@ -63,13 +65,13 @@ Details
 - Self-audit (no pr-auditor sub-agent in this session): this change touches only `docs/STATUS.md`, a non-protected path, ledger text only. LOW risk.
 - Housekeeping (not done, needs the owner's word): `git ls-remote --heads origin | wc -l` = 245 remote branches, mostly stale `chore/idle-*` and `status/*` from earlier idle runs. Deleting them is a remote write, so not done unasked.
 - No schedule claim: a written cron is not a scheduler; sessions cannot self-schedule.
-- Observed (not verified against earlier history): the loop has now run 271 times with an empty queue. It needs new `ready` items or retirement.
+- Observed (not verified against earlier history): the loop has now run 272 times with an empty queue. It needs new `ready` items or retirement.
 
 Last 5 actions:
-- idle run (two-hundred-and-seventy-first): no new seq, no ready item, no PR needing action; ledger only.
+- idle run (two-hundred-and-seventy-second): no new seq, no ready item, no PR needing action; ledger only.
+- idle run (two-hundred-and-seventy-first): no new seq, no ready item, no PR needing action; ledger only (PR #300).
 - idle run (two-hundred-and-seventieth): no new seq, no ready item, no PR needing action; ledger only (PR #299).
 - idle run (two-hundred-and-sixty-ninth): no new seq, no ready item, no PR needing action; ledger only.
 - idle run (two-hundred-and-sixty-eighth): no new seq, no ready item, no PR needing action; ledger only (PR #297).
-- finish run (two-hundred-and-sixty-seventh): merged own ledger PR #296 (LOW, docs only); no code changed.
 
-Next: none queued (run 271 idle). The backlog-empty stop condition is met, so the loop is paused until a new `ready` item or a new inbox seq arrives. BL-1..BL-5 done; BL-5 merged by the owner as PR #125. One HIGH-risk PR awaits the owner: #42 (watchdog).
+Next: none queued (run 272 idle). The backlog-empty stop condition is met, so the loop is paused until a new `ready` item or a new inbox seq arrives. BL-1..BL-5 done; BL-5 merged by the owner as PR #125. One HIGH-risk PR awaits the owner: #42 (watchdog).
