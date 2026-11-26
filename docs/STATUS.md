@@ -4,10 +4,12 @@ ack seq 3
 
 **Owner brief**
 - BLOCKER: none.
-- Changed: docs/STATUS.md only (ledger for run 267, this PR - it also carries run 266's idle line). No code changed.
-- Evidence: Verified - inbox `seq: 3` equals `last_seq: 3` (already handled); `docs/BACKLOG.md` has no `status=ready` item (BL-1..BL-5 `done`); open PRs were this ledger PR #296 (LOW, docs only, CI `validate` success) and #42 (HIGH, head `3717f21f103a`, unchanged since 2026-10-31, one pr-auditor comment, nothing awaiting a reply); gates on this branch: `validate.py` exit 0, `tests/hooks_test.sh` 180 passed / 0 failed. Blocked: `loader_smoke.py` ("openhands-sdk is not installed"; CI runs it).
+- Changed: docs/STATUS.md only (ledger for run 268). No code changed.
+- Evidence: Verified - inbox `seq: 3` equals `last_seq: 3` (already handled, not re-acked); `docs/BACKLOG.md` has no `status=ready` item (BL-1..BL-5 `done`); the only open PR is #42 (HIGH, head `3717f21f103a`, unchanged since 2026-10-31, one pr-auditor comment, nothing awaiting a reply); gates on this branch: `validate.py` OK (33 skills / 19 sub-agents / 3 hooks), `tests/hooks_test.sh` 180 passed / 0 failed. Blocked: `loader_smoke.py` ("openhands-sdk is not installed"; CI runs it).
 - Costs / irreversible steps: none.
-- Next action for the owner: retire the loop or give it work - 267 runs, empty queue, nothing left that the loop may touch (only #42 is open and it is HIGH risk).
+- Next action for the owner: retire the loop or give it work - 268 runs, empty queue, nothing left that the loop may touch (only #42 is open and it is HIGH risk).
+
+- idle: run 2026-11-26 (two-hundred-and-sixty-eighth) - no new inbox seq (store returned seq 3 = `last_seq`), no `status=ready` item (BL-1..BL-5 all `done`), no open PR needing action (#42 ready HIGH head `3717f21f103a` unchanged since 2026-10-31, one pr-auditor comment, nothing awaiting a reply; HIGH, so the loop will not merge). No code changed. Backlog-empty stop condition met, so this run is a stop, not new work.
 
 - finish: run 2026-11-26 (two-hundred-and-sixty-seventh) - no new inbox seq (store returned seq 3 = `last_seq`), no `status=ready` item (BL-1..BL-5 all `done`). The open PR needing action was this loop's own ledger PR #296 (draft, LOW risk, docs only, head `ed35fb4e0600`, CI `validate` success, mergeable clean): verified its diff touches only `docs/STATUS.md` and its claims (seq 3 = `last_seq`, no ready item, #42 head `3717f21f103a` unchanged), added this line, marked it ready and merged it under the owner grant. PR #42 remains HIGH, untouched. No code changed.
 
@@ -58,18 +60,10 @@ Details
 - Observed (not verified against earlier history): the loop has now run 263 times with an empty queue. It needs new `ready` items or retirement.
 
 Last 5 actions:
+- idle run (two-hundred-and-sixty-eighth): no new seq, no ready item, no PR needing action; ledger only.
 - finish run (two-hundred-and-sixty-seventh): merged own ledger PR #296 (LOW, docs only); no code changed.
 - idle run (two-hundred-and-sixty-sixth): no new seq, no ready item, no PR needing action; ledger only.
 - idle run (two-hundred-and-sixty-fifth): no new seq, no ready item, no PR needing action; ledger only.
 - idle run (two-hundred-and-sixty-fourth): no new seq, no ready item, no PR needing action; ledger only.
-- idle run (two-hundred-and-sixty-third): no new seq, no ready item, no PR needing action; ledger only.
-- idle run (two-hundred-and-sixty-second): no new seq, no ready item, no PR needing action; ledger only.
-- idle run (two-hundred-and-sixty-first): no new seq, no ready item, no PR needing action; ledger only.
-- finish run (two-hundred-and-sixtieth): merged own ledger PR #290 (LOW, docs only); no code changed.
-- idle run (two-hundred-and-fifty-ninth): no new seq, no ready item, no PR needing action; ledger only.
-- idle run (two-hundred-and-fifty-eighth): no new seq, no ready item, no PR needing action; ledger only.
-- finish run (two-hundred-and-fifty-seventh): merged own ledger PR #288 (LOW, docs only); no code changed.
-- idle run (two-hundred-and-fifty-sixth): no new seq, no ready item, no PR needing action; verified #125 merged by owner and gates green on main; ledger only.
-- idle run (two-hundred-and-fifty-fourth): no new seq, no ready item, no PR needing action; no code changed.
 
-Next: none queued (run 266 also idle). The backlog-empty stop condition is met, so the loop is paused until a new `ready` item or a new inbox seq arrives. BL-1..BL-5 done; BL-5 merged by the owner as PR #125. One HIGH-risk PR awaits the owner: #42 (watchdog).
+Next: none queued (run 268 idle). The backlog-empty stop condition is met, so the loop is paused until a new `ready` item or a new inbox seq arrives. BL-1..BL-5 done; BL-5 merged by the owner as PR #125. One HIGH-risk PR awaits the owner: #42 (watchdog).
