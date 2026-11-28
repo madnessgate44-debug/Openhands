@@ -4,10 +4,12 @@ ack seq 3
 
 **Owner brief**
 - BLOCKER: none.
-- Changed: docs/STATUS.md only. Idle line for run 292; no code changed, no new PR beyond this ledger.
-- Evidence: Verified - inbox `seq: 3` equals `last_seq: 3` (already handled, not re-acked); `grep -cE 'status=ready' docs/BACKLOG.md` = 0 (BL-1..BL-5 all `done`); `GET pulls?state=open` = 1 PR (#42, HIGH, `.github/**`, head `3717f21f103a` unchanged since 2026-10-31, one pr-auditor comment, nothing awaiting a reply); main `fcde308` clean.
+- Changed: docs/STATUS.md only. Idle line for run 293; no code changed, no new PR beyond this ledger.
+- Evidence: Verified - inbox `seq: 3` equals `last_seq: 3` (already handled, not re-acked); `grep -cE 'status=ready' docs/BACKLOG.md` = 0 (BL-1..BL-5 all `done`); `GET pulls?state=open` = 1 PR (#42, HIGH, `.github/**`, head `3717f21f103a` unchanged since 2026-10-31, one pr-auditor comment, nothing awaiting a reply); main `4de4e08` clean.
 - Costs / irreversible steps: none.
 - Next action for the owner: decide #42 - merge it or close it (HIGH risk, your call; the loop will not touch it).
+
+- idle: run 2026-11-28 (two-hundred-and-ninety-third) - no new inbox seq (store returned seq 3 = `last_seq`, nothing to ack), no `status=ready` item (`grep -cE 'status=ready' docs/BACKLOG.md` = 0; BL-1..BL-5 all `done`), no open PR needing action (`GET pulls?state=open` = 1 PR: #42, ready, HIGH, files include `.github/**`, head `3717f21f103a` unchanged since 2026-10-31, one pr-auditor comment, nothing awaiting a reply). Gates not re-run: docs-only edit, no skill/agent/hook touched. No code changed. Backlog-empty stop condition met, so this run is a stop, not new work.
 
 - idle: run 2026-11-28 (two-hundred-and-ninety-second) - no new inbox seq (store returned seq 3 = `last_seq`, nothing to ack), no `status=ready` item (`grep -cE 'status=ready' docs/BACKLOG.md` = 0; BL-1..BL-5 all `done`), no open PR needing action (`GET pulls?state=open` = 1 PR: #42, ready, HIGH, files include `.github/**`, head `3717f21f103a` unchanged since 2026-10-31, one pr-auditor comment, nothing awaiting a reply). Gates not re-run: docs-only edit, no skill/agent/hook touched. No code changed. Backlog-empty stop condition met, so this run is a stop, not new work.
 
@@ -34,6 +36,7 @@ Details
 - No schedule claim: a written cron is not a scheduler; sessions cannot self-schedule.
 
 Last 5 actions:
+- run two-hundred-and-ninety-third: no new seq, no ready item, no PR needing action; idle ledger only; #42 left for the owner.
 - run two-hundred-and-ninety-second: no new seq, no ready item, no PR needing action; idle ledger only; #42 left for the owner.
 - run two-hundred-and-ninety-first: no new seq, no ready item, no PR needing action; idle line only; #42 left for the owner.
 - run two-hundred-and-ninetieth: no new seq, no ready item, no PR needing action; idle line only; #42 left for the owner.
@@ -41,4 +44,4 @@ Last 5 actions:
 - run two-hundred-and-eighty-eighth: no new seq, no ready item, no PR needing action; idle line only.
 - run two-hundred-and-eighty-seventh: verified and merged ledger PR #315 (LOW, CI green); #42 left for the owner.
 
-Next: none queued (run 292). The backlog-empty stop condition is met; the loop is paused until a new `ready` item or a new inbox seq arrives. One HIGH-risk PR awaits the owner: #42 (watchdog).
+Next: none queued (run 293). The backlog-empty stop condition is met; the loop is paused until a new `ready` item or a new inbox seq arrives. One HIGH-risk PR awaits the owner: #42 (watchdog).
