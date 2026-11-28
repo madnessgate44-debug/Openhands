@@ -4,11 +4,12 @@ ack seq 3
 
 **Owner brief**
 - BLOCKER: none.
-- Changed: docs/STATUS.md only. Idle line for run 290; no code changed, no PR opened by this run.
-- Evidence: Verified - inbox `seq: 3` equals `last_seq: 3` (already handled, not re-acked); `grep -cE 'status=ready' docs/BACKLOG.md` = 0 (BL-1..BL-5 all `done`); `GET pulls?state=open` = 1 PR (#42, HIGH, `.github/**`, head `3717f21f10` unchanged since 2026-10-31, audit comment present, nothing awaiting a reply); main `4fef873` clean and unchanged since run 289.
+- Changed: docs/STATUS.md only. Idle line for run 291; no code changed, no new PR.
+- Evidence: Verified - inbox `seq: 3` equals `last_seq: 3` (already handled by run 290, not re-acked); `grep -cE 'status=ready' docs/BACKLOG.md` = 0 (BL-1..BL-5 all `done`); `GET pulls?state=open` = 1 PR (#42, HIGH, `.github/**`, head `3717f21f103a` unchanged since 2026-10-31, audit comment present, CI `validate` success, nothing awaiting a reply); main `b98231b` clean.
 - Costs / irreversible steps: none.
-- Next action for the owner: decide the loop's fate - 290 runs with an empty queue since BL-5; and merge or close #42 (HIGH risk, needs your review).
+- Next action for the owner: decide #42 - merge it or close it (HIGH risk, your call; the loop will not touch it).
 
+- idle: run 2026-11-28 (two-hundred-and-ninety-first) - no new inbox seq (store returned seq 3 = `last_seq`, nothing to ack), no `status=ready` item (`grep -cE 'status=ready' docs/BACKLOG.md` = 0; BL-1..BL-5 all `done`), no open PR needing action (`GET pulls?state=open` = 1 PR: #42, HIGH, `.github/**` protected, head `3717f21f103a` unchanged since 2026-10-31, one pr-auditor comment, CI `validate` success, nothing awaiting a reply). Gates not re-run: docs-only edit, no skill/agent/hook touched. No code changed. Backlog-empty stop condition met, so this run is a stop, not new work.
 - idle: run 2026-11-28 (two-hundred-and-ninetieth) - no new inbox seq (store returned seq 3 = `last_seq`, nothing to ack), no `status=ready` item (`grep -cE 'status=ready' docs/BACKLOG.md` = 0; BL-1..BL-5 all `done`), no open PR needing action (`GET pulls?state=open` = 1 PR: #42, HIGH, `.github/**` protected, head `3717f21f103a` unchanged since 2026-10-31, one pr-auditor comment, nothing awaiting a reply). Gates: `validate.py` OK (33 skills / 19 sub-agents / 3 hooks), `hooks_test.sh` 180 passed, `loader_smoke.py` blocked (SDK absent). No code changed. Backlog-empty stop condition met, so this run is a stop, not new work.
 
 - idle: run 2026-11-28 (two-hundred-and-eighty-ninth) - no new inbox seq (store returned seq 3 = `last_seq`, nothing to ack), no `status=ready` item (`grep -cE 'status=ready' docs/BACKLOG.md` = 0; BL-1..BL-5 all `done`). One open PR needed action: #316 (draft ledger from run 288, LOW, `docs/STATUS.md` only +13/-19, CI `validate` success on head `5641853`, base = main `4a61837`, clean) -> verified and merged under the `docs/LOOP.md` LOW-risk grant, with this run's line added to the same branch instead of opening a duplicate. PR #42 (HIGH, `.github/**` protected, head `3717f21f103a` unchanged since 2026-10-31) untouched. Gates: `validate.py` OK, `hooks_test.sh` 180 passed, `loader_smoke.py` blocked (SDK absent). No code changed.
@@ -31,10 +32,10 @@ Details
 - No schedule claim: a written cron is not a scheduler; sessions cannot self-schedule.
 
 Last 5 actions:
+- run two-hundred-and-ninety-first: no new seq, no ready item, no PR needing action; idle line only; #42 left for the owner.
 - run two-hundred-and-ninetieth: no new seq, no ready item, no PR needing action; idle line only; #42 left for the owner.
-- run two-hundred-and-eighty-ninth: no new seq, no ready item; verified and merged ledger PR #316 (LOW, CI green), this run's line added to the same branch; #42 left for the owner.
-- run two-hundred-and-eighty-eighth: no new seq, no ready item, no PR needing action; idle line only (draft ledger PR #316, parallel session).
+- run two-hundred-and-eighty-ninth: no new seq, no ready item; verified and merged ledger PR #316 (LOW, CI green); #42 left for the owner.
+- run two-hundred-and-eighty-eighth: no new seq, no ready item, no PR needing action; idle line only.
 - run two-hundred-and-eighty-seventh: verified and merged ledger PR #315 (LOW, CI green); #42 left for the owner.
-- idle run (two-hundred-and-eighty-sixth): no new seq, no ready item; ledger PR #315 opened (parallel session).
 
-Next: none queued (run 290). The backlog-empty stop condition is met; the loop is paused until a new `ready` item or a new inbox seq arrives. One HIGH-risk PR awaits the owner: #42 (watchdog).
+Next: none queued (run 291). The backlog-empty stop condition is met; the loop is paused until a new `ready` item or a new inbox seq arrives. One HIGH-risk PR awaits the owner: #42 (watchdog).
